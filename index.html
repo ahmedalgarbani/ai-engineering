@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Engineer Studio · كورس مهندس الذكاء الاصطناعي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Readex+Pro:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <button class="menu-btn" id="menuBtn" aria-label="Show lessons">☰</button>
+  <div class="brand" id="homeLink" title="Course map">
+    <div class="mark">AI</div>
+    <h1>AI Engineer Studio<span>مهندس الذكاء الاصطناعي · المنصة التفاعلية</span></h1>
+  </div>
+  <div class="hdr-r">
+    <div class="prog"><span class="num" id="progTxt">0 / 0</span><div class="bar"><i id="progBar"></i></div></div>
+    <button class="exam-hdr-btn" id="examHdrBtn" title="End-of-Course Level Assessment">🎓 <span id="examHdrLbl">Final Exam · الاختبار</span><span class="lv-chip" id="hdrLv" style="display:none"></span></button>
+    <button class="icon-btn" id="themeBtn" title="Toggle Light / Dark theme" aria-label="Toggle theme">☀️</button>
+    <div class="seg" role="group" aria-label="Interface language"><button data-l="en">EN</button><button data-l="ar">عربي</button></div>
+  </div>
+</header>
+<div class="wrap">
+  <aside>
+    <div class="search">
+      <input id="q" type="search" placeholder="Search lessons · ابحث في الدروس" aria-label="Search lessons">
+      <div class="filters" id="filters">
+        <button data-f="all" class="on">All · الكل</button>
+        <button data-f="orig">Course · الكورس</button>
+        <button data-f="add">Added · إضافي</button>
+        <button data-f="core">Core · أساسي</button>
+        <button data-f="todo">Todo · متبقي</button>
+      </div>
+    </div>
+    <nav class="tree" id="tree"></nav>
+    <div class="aside-foot">
+      <button class="aside-exam" id="asideExamBtn">
+        <span style="font-size:22px">🎓</span>
+        <div>
+          <b id="asideExamT">Final Level Exam</b>
+          <small id="asideExamS">36 Qs · Determine your AI Engineer level</small>
+        </div>
+      </button>
+    </div>
+  </aside>
+  <main id="main"><div class="page" id="page"></div></main>
+</div>
+<script src="data0.js"></script>
+<script src="data1.js"></script>
+<script src="data2.js"></script>
+<script src="data3.js"></script>
+<script src="enrich.js"></script>
+<script src="scenes.js"></script>
+<script src="motion.js"></script>
+<script src="exam.js"></script>
+<script src="pptx.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
