@@ -512,5 +512,5 @@
     return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">${bg(acc, u)}${f(labels || [], acc, u)}</svg>`;
   };
   window.SCENE_DUR = 8;
-  window.SceneKit = { W, H, esc, wrap, label, appear, bg, isAr, ff, pulse, nextId };
+  window.SceneKit = { W, H, esc, wrap, label, appear, bg, isAr, ff, pulse, nextId, S };
 })();

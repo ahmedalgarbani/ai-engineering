@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="utf-8">
+<title>Course video renderer</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Readex+Pro:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=block" rel="stylesheet">
+<style>
+  html, body { margin: 0; width: 960px; height: 540px; overflow: hidden; background: #07101e; }
+  #root { position: relative; width: 960px; height: 540px; overflow: hidden; background: #07101e; }
+  #layers { position: absolute; inset: 0; z-index: 0; isolation: isolate; }
+  #sweep, #vignette { z-index: 5; }
+  #top, #prog { z-index: 6; }
+  #fade { z-index: 9; }
+  .ch { position: absolute; inset: 0; display: none; will-change: transform, opacity; }
+  .ch .kb { position: absolute; inset: 0; }
+  .ch svg { position: absolute; inset: 0; width: 960px; height: 540px; display: block; }
+  #sweep { position: absolute; inset: -40px; pointer-events: none; opacity: 0;
+    background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,.55) 49%, rgba(255,255,255,.08) 54%, transparent 64%);
+    mix-blend-mode: soft-light; }
+  #vignette { position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 50%, transparent 62%, rgba(0,0,0,.38) 100%); }
+  #top { position: absolute; top: 11px; left: 54px; right: 54px; height: 26px; display: flex; direction: rtl; justify-content: space-between; align-items: center;
+    font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif; opacity: 0; }
+  #top .r, #top .l { display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 12px 0 12px; border-radius: 13px;
+    background: rgba(9, 19, 34, .72); border: 1px solid rgba(255,255,255,.08); backdrop-filter: blur(4px); }
+  #top .r { direction: rtl; padding-right: 4px; }
+  #top .id { font: 700 10.5px "IBM Plex Mono", monospace; color: #07101e; background: var(--acc); border-radius: 9px; padding: 2px 8px; direction: ltr; }
+  #top .tt { font-size: 11.5px; font-weight: 600; color: #e2e8f0; max-width: 470px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #top .l { direction: rtl; font-size: 11px; font-weight: 600; color: var(--acc); }
+  #top .l i { width: 6px; height: 6px; border-radius: 3px; background: var(--acc); display: inline-block; }
+  #prog { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255,255,255,.06); }
+  #prog i { position: absolute; right: 0; top: 0; bottom: 0; background: var(--acc); }
+  #prog b { position: absolute; top: 0; bottom: 0; width: 2px; background: #07101e; }
+  #fade { position: absolute; inset: 0; background: #000; pointer-events: none; }
+  #warm { position: absolute; left: -20px; top: -20px; width: 1px; height: 1px; overflow: hidden; }
+</style>
+</head>
+<body>
+<div id="root">
+  <div id="layers"></div>
+  <div id="sweep"></div>
+  <div id="vignette"></div>
+  <div id="top"><div class="r"><span class="id"></span><span class="tt"></span></div><div class="l"><i></i><span class="chn"></span></div></div>
+  <div id="prog"><i></i></div>
+  <div id="fade"></div>
+</div>
+<div id="warm"></div>
+<script src="../../data0.js"></script>
+<script src="../../data1.js"></script>
+<script src="../../data2.js"></script>
+<script src="../../data3.js"></script>
+<script src="../../enrich.js"></script>
+<script src="../../scenes.js"></script>
+<script src="../../motion.js"></script>
+<script src="arscenes.js"></script>
+<script src="stage.js"></script>
+</body>
+</html>

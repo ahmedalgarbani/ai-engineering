@@ -255,6 +255,83 @@
         "Trusting tenant_id from the client request body or shipping prompt edits without automated regression evals in CI.",
         "الوثوق بـ tenant_id القادم من جسم الطلب أو نشر تعديلات أوامر دون اختبارات منع التراجع في CI."
       ]
+    },
+    W1: {
+      icon: "code",
+      analogy: [
+        "Coding with AI is like leading a high-speed engineering crew: your clarity in specs, context, and plans determines whether they build a skyscraper or a maze.",
+        "البرمجة مع الذكاء الاصطناعي مثل قيادة فريق هندسي فائق السرعة: وضوحك في المواصفات والسياق والتخطيط يحدد هل سيبنون ناطحة سحاب أم متاهة."
+      ],
+      mistake: [
+        "Jumping straight into vague 'fix it' prompts inside one crowded 50-turn chat with zero plan and zero verification.",
+        "القفز مباشرة بأوامر غامضة داخل محادثة طويلة مزدحمة بلا خطة واضحة ولا تحقق من النتائج."
+      ]
+    },
+    W2: {
+      icon: "layers",
+      analogy: [
+        "Rules files (GEMINI.md, CLAUDE.md, AGENTS.md) are your repo's permanent engineering laws — write them once so every agent session respects your architecture.",
+        "ملفات القواعد (GEMINI.md / CLAUDE.md / AGENTS.md) هي قوانين الهندسة الدائمة لمشروعك — اكتبها مرة واحدة ليلتزم بها كل وكيل في كل جلسة."
+      ],
+      mistake: [
+        "Dumping 800 lines of vague advice into a rules file so the agent suffers attention dilution and ignores the rules that matter.",
+        "حشو 800 سطر من النصائح العامة في ملف القواعد فيتشتت انتباه الوكيل ويتجاهل القواعد الأهم."
+      ]
+    },
+    W3: {
+      icon: "bolt",
+      analogy: [
+        "Skills are specialized playbooks pulled off the shelf only when needed; Hooks are deterministic safety locks; Subagents are focused helpers that keep your main context spotless.",
+        "المهارات (Skills) كتيّبات خبرة تُفتح عند الحاجة فقط، والـ Hooks أقفال أمان حتمية، والوكلاء الفرعيون مساعدون يعزلون الضوضاء عن سياقك الرئيسي."
+      ],
+      mistake: [
+        "Stuffing multi-step playbooks into always-on Rules instead of Skills, or relying on polite prompts instead of deterministic Hooks.",
+        "حشر إجراءات متخصصة طويلة داخل القواعد الدائمة بدل Skills، أو الاعتماد على الترجّي النصي بدل Hooks حتمية."
+      ]
+    },
+    W4: {
+      icon: "shield",
+      analogy: [
+        "MCP plugs your AI into live GitHub, databases, Figma, and browsers — while TDD loops, model routing, and strict diff reviews keep you firmly in the pilot seat.",
+        "يربط MCP وكيلك بـ GitHub وقواعد البيانات وFigma والمتصفح مباشرة، بينما تُبقيك اختبارات TDD وتوجيه النماذج ومراجعة التعديلات في مقعد القيادة."
+      ],
+      mistake: [
+        "Enabling 15 bloated MCP servers with write permissions to production or merging unreviewed 'AI Slop' you cannot explain.",
+        "تفعيل 15 خادم MCP بصلاحيات كتابة على الإنتاج أو دمج «كود عشوائي» (AI Slop) دون مراجعة وفهم."
+      ]
+    },
+    F1: {
+      icon: "rocket",
+      analogy: [
+        "An LLM is a Formula 1 engine; the Agent Harness is the chassis, telemetry, brakes, durable state, and pit crew that make it win long races reliably.",
+        "النموذج اللغوي محرك سباق؛ أما الـ Harness فهو الهيكل والفرامل والحالة الدائمة والمدقّقات التي تجعله يفوز في السباقات الطويلة بثبات."
+      ],
+      mistake: [
+        "Expecting a single fragile in-memory chat loop to run for hours and grade its own output accurately without a harness, durable checkpoints, or an independent evaluator.",
+        "توقع نجاح حلقة محادثة هشة في الذاكرة لساعات وتقييمها لنفسها بدقة دون Harness وحفظ حالة دائم ومُقيِّم مستقل."
+      ]
+    },
+    F2: {
+      icon: "shield",
+      analogy: [
+        "Containers isolate the blast radius and Portainer-Command acts as air-traffic control: AI agents inspect read-only radar, submit GitOps Pull Requests, and can be halted fleet-wide in one click.",
+        "الحاويات تعزل نطاق التأثير، ويعمل Portainer-Command كبرج مراقبة: يفحص الوكيل بصلاحية قراءة فقط ويقترح تعديلاته عبر GitOps PR مع زر إيقاف طارئ فوري."
+      ],
+      mistake: [
+        "Handing an AI agent your personal admin kubeconfig, host Docker socket, or direct write access to production servers.",
+        "تسليم وكيل الذكاء الاصطناعي ملف kubeconfig الإداري الشخصي أو مقبس Docker الرئيسي أو صلاحية كتابة مباشرة على الإنتاج."
+      ]
+    },
+    F3: {
+      icon: "radar",
+      analogy: [
+        "MCP plugs tools into an agent, A2A connects agents across teams, AG-UI streams rich live interfaces to humans, and RLVR/DSPy replace guesswork with objective verifiers.",
+        "يربط MCP الأدوات بالوكيل، ويربط A2A الوكلاء ببعضهم، وتبث AG-UI واجهات تفاعلية للمستخدم، بينما يستبدل RLVR وDSPy التخمين بالمدقّقات الموضوعية."
+      ],
+      mistake: [
+        "Building brittle proprietary glue code for multi-agent handoffs or hand-tweaking giant prompt strings every time you switch models.",
+        "كتابة أكواد ربط هشة ومغلقة بين الوكلاء أو تعديل نصوص أوامر ضخمة يدويًا مع كل تبديل للنموذج."
+      ]
     }
   };
 

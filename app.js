@@ -1,6 +1,6 @@
 // AI Engineer Studio — Main Application Controller
 (function () {
-  const ACC = { C: "#f5a524", S1: "#3db4f2", S2: "#22c3a6", S3: "#f2795b", S4: "#e8618c", S5: "#9ccc65" };
+  const ACC = { C: "#f5a524", S1: "#3db4f2", S2: "#22c3a6", S3: "#f2795b", S4: "#e8618c", S5: "#9ccc65", S6: "#a855f7", S7: "#06b6d4" };
   const KIND = {
     orig: ["Course lesson", "درس من الكورس", "#94b8db"],
     add: ["Added lesson", "درس إضافي مطوّر", "#4fd1a5"],
@@ -20,11 +20,12 @@
 
   let done = new Set(store.get("aie-done", []));
   let ui = store.get("aie-ui", "ar");
-  let theme = store.get("aie-theme", "dark");
+  // v2 key: the redesign starts everyone on the bright theme once; the toggle still persists.
+  let theme = store.get("aie-theme-v2", "light");
   let slideTheme = store.get("aie-stheme", "light");
   let motionMode = store.get("aie-mmode", "full");
   let sfxOn = store.get("aie-sfx", true);
-  let ttsOn = store.get("aie-tts", false);
+  let ttsOn = store.get("aie-tts-v2", true);
   let subMode = store.get("aie-sub", "both"); // both | ar | en
   let filter = "all";
   let tab = store.get("aie-tab", "slides");
@@ -73,9 +74,13 @@
     } else {
       chip.style.display = "none";
     }
+    const nQs = window.EXAM_BANK ? window.EXAM_BANK.length : 42;
     $("#examHdrLbl").textContent = AR() ? "اختبار المستوى" : "Level Exam";
-    $("#asideExamT").textContent = AR() ? "اختبار نهاية الدورة وتحديد المستوى" : "Final Level Assessment Exam";
-    $("#asideExamS").textContent = AR() ? "36 سؤالًا · تشخيص مستواك وشهادة إنجاز" : "36 Qs · Level report & certificate";
+    $("#asideExamT").textContent = AR() ? "اختبار تحديد المستوى" : "Level Exam";
+    $("#asideExamS").textContent = AR() ? `${nQs} سؤالًا · مع شهادة` : `${nQs} questions · with certificate`;
+    $("#q").placeholder = AR() ? "ابحث في الدروس…" : "Search lessons…";
+    const FL = { all: ["All", "الكل"], orig: ["Course", "الكورس"], add: ["Added", "إضافي"], core: ["Core", "أساسي"], todo: ["To do", "متبقي"] };
+    document.querySelectorAll("#filters button").forEach(b => { b.textContent = T(FL[b.dataset.f]); });
     $("#examHdrBtn").classList.toggle("on", location.hash === "#exam");
   }
 
@@ -95,7 +100,7 @@
           return matchQ && matchF;
         });
         if (!ls.length) return;
-        mods += `<div class="mh ${cls1()}">${esc(T(m.t))}<span class="cnt">${ls.length}·${m.lessons.reduce((a, b) => a + b.min, 0)}m</span></div>` +
+        mods += `<div class="mh ${cls1()}">${esc(T(m.t))}<span class="cnt">${m.lessons.reduce((a, b) => a + b.min, 0)} ${AR() ? "د" : "min"}</span></div>` +
           ls.map(l => `<div class="les ${done.has(l.id) ? "done" : ""} ${cur === l.slug ? "active" : ""}" data-slug="${l.slug}" tabindex="0" style="--sc:${l.acc}">
             <span class="num">${esc(l.id)}</span><span class="kdot" style="background:${KIND[l.k][2]}" title="${KIND[l.k][0]}"></span>
             <span class="lt ${cls1()}">${esc(T(l.t))}<small class="${cls2()}">${esc(T2(l.t))}</small></span>
@@ -132,8 +137,9 @@
     buildTree();
   });
   document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { ui = b.dataset.l; store.set("aie-ui", ui); render(); }));
-  $("#themeBtn").addEventListener("click", () => { theme = theme === "dark" ? "light" : "dark"; store.set("aie-theme", theme); applyTheme(); });
+  $("#themeBtn").addEventListener("click", () => { theme = theme === "dark" ? "light" : "dark"; store.set("aie-theme-v2", theme); applyTheme(); });
   $("#menuBtn").addEventListener("click", () => document.body.classList.toggle("nav"));
+  $("#scrim").addEventListener("click", () => document.body.classList.remove("nav"));
   $("#homeLink").addEventListener("click", () => { history.replaceState(null, "", location.pathname); render(); });
   $("#examHdrBtn").addEventListener("click", () => { location.hash = "exam"; document.body.classList.remove("nav"); });
   $("#asideExamBtn").addEventListener("click", () => { location.hash = "exam"; document.body.classList.remove("nav"); });
@@ -142,68 +148,78 @@
   function home() {
     document.documentElement.style.setProperty("--accent", "#f5a524");
     const mins = flat.reduce((a, b) => a + b.min, 0), c = k => flat.filter(l => l.k === k).length;
-    const origMin = flat.filter(l => l.k === "orig").reduce((a, b) => a + b.min, 0);
     const nextTodo = flat.find(l => !done.has(l.id)) || flat[0];
     const best = store.get("aie-exam-best", null);
     const bestLv = best && window.EXAM_LEVELS ? window.EXAM_LEVELS.find(x => x.id === best.levelId) : null;
     const pctDone = Math.round((done.size / flat.length) * 100);
 
+    const dur = AR() ? `${Math.floor(mins / 60)} ساعة و${mins % 60} دقيقة` : `${Math.floor(mins / 60)}h ${mins % 60}m`;
+    const nMods = COURSE.stages.reduce((a, s) => a + s.modules.length, 0);
+    const strip = t => t.replace(/^(Stage \d:|المرحلة \d:)\s*/, "");
+
+    const nSt = COURSE.stages.length;
+    const nQs = window.EXAM_BANK ? window.EXAM_BANK.length : 42;
     $("#page").innerHTML = `
-      <section class="mast">
+      <section class="hero">
         <div>
-          <div class="eyebrow" style="--sc:var(--accent)">${AR() ? "منصة كورس مهندس الذكاء الاصطناعي المطوّرة · 6 مراحل متكاملة" : "UPGRADED AI ENGINEER STUDIO · 6 COMPLETE STAGES"}</div>
-          <h2>${AR() ? "كورس مهندس الذكاء الاصطناعي، درسًا درسًا" : "The AI Engineer Course, Lesson by Lesson"}</h2>
-          <div class="sub-t">${AR() ? "The Complete Hands-on AI Engineering Curriculum" : "كورس مهندس الذكاء الاصطناعي الشامل والتطبيقي"}</div>
+          <div class="eyebrow" style="--sc:var(--accent)">${AR() ? `كورس تطبيقي · ${nSt} مراحل` : `Hands-on course · ${nSt} stages`}</div>
+          <h2>${AR() ? "كورس مهندس الذكاء الاصطناعي" : "The AI Engineer Course"}</h2>
           <p>${AR()
-            ? "تعلّم بناء منتجات الذكاء الاصطناعي من الصفر حتى الإنتاج عبر شرائح PowerPoint احترافية، وفيديوهات موشن طويلة وممتعة لكل درس، وإنفوجرافيك تفاعلي، واختبار نهاية دورة يحدّد مستواك مع شهادة إنجاز."
-            : "Master end-to-end AI Product Engineering with redesigned PowerPoint decks (exportable to .pptx), full fun animated explainer motion videos for every lesson, interactive infographics, and an end-of-course Level Assessment Exam."}</p>
+            ? "من أساسيات النماذج حتى بناء منتجات ذكاء اصطناعي حقيقية. كل درس فيه شرائح، وفيديو قصير، وملخص بالصور، وشرح مكتوب."
+            : "From model basics to shipping real AI products. Every lesson has slides, a short video, a visual summary and a written guide."}</p>
           <div class="hero-ctas">
-            <button class="btn pri" id="goContinue" style="--sc:var(--accent)">▶ ${done.size ? (AR() ? `أكمل من ${nextTodo.id}` : `Continue ${nextTodo.id}`) : (AR() ? "ابدأ الدرس الأول" : "Start First Lesson")}</button>
-            <button class="btn" id="goExamHome">🎓 ${bestLv ? `${bestLv.icon} ${T(bestLv.t)} (${best.pct}%)` : (AR() ? "اختبار تحديد المستوى (36 سؤالًا)" : "Take Level Exam (36 Qs)")}</button>
+            <button class="btn pri" id="goContinue" style="--sc:var(--accent)">${done.size ? (AR() ? `أكمل من ${nextTodo.id} ←` : `Continue ${nextTodo.id} →`) : (AR() ? "ابدأ أول درس ←" : "Start the first lesson →")}</button>
+            <button class="btn" id="goExamHome">🎓 ${bestLv ? `${T(bestLv.t)} · ${best.pct}%` : (AR() ? "اختبار المستوى" : "Level exam")}</button>
           </div>
         </div>
-        <div class="tiles">
-          <div class="tile"><b>${flat.length}</b><span>${AR() ? "درسًا محدثًا" : "upgraded lessons"}</span></div>
-          <div class="tile"><b>${COURSE.stages.reduce((a, s) => a + s.modules.length, 0)}</b><span>${AR() ? "محاضرة ووحدة" : "lectures & modules"}</span></div>
-          <div class="tile"><b>${Math.floor(mins / 60)}h ${mins % 60}m</b><span>${AR() ? "مدة المحتوى الكلي" : "total curriculum"}</span></div>
-          <div class="tile"><b>${pctDone}%</b><span>${done.size}/${flat.length} ${AR() ? "مكتمل" : "completed"}</span></div>
+        <div class="prog-card">
+          <small>${AR() ? "تقدّمك" : "Your progress"}</small>
+          <b class="big">${pctDone}%</b>
+          <div class="bar"><i style="width:${pctDone}%"></i></div>
+          <div class="facts">
+            <span><b>${done.size}</b> ${AR() ? "من" : "of"} <b>${flat.length}</b> ${AR() ? "درس مكتمل" : "lessons done"}</span>
+            <span><b>${nMods}</b> ${AR() ? "وحدة" : "modules"} · <b>${dur}</b></span>
+          </div>
         </div>
       </section>
 
-      <div class="legend">
-        <span class="pill"><i style="background:${KIND.orig[2]}"></i>${AR() ? "دروس الكورس" : "Course"} · ${c("orig")}</span>
-        <span class="pill"><i style="background:${KIND.add[2]}"></i>${AR() ? "دروس مضافة ومطوّرة" : "Added & Upgraded"} · ${c("add")}</span>
-        <span class="pill"><i style="background:${KIND.core[2]}"></i>${AR() ? "المفاهيم الأساسية" : "Core"} · ${c("core")}</span>
-        <span>${AR() ? `يتضمن الكورس الأصلي (${Math.floor(origMin / 60)} س ${origMin % 60} د) + دروسًا حديثة في نماذج التفكير والصوت والـ GraphRAG وAI Gateways وvLLM.` : `Includes original course (${Math.floor(origMin / 60)}h ${origMin % 60}m) + modern lessons on Reasoning, Multimodal, Fine-Tuning, GraphRAG, Sandboxes, Gateways & vLLM.`}</span>
+      <div class="sec-h">
+        <h3>${AR() ? "مراحل الكورس" : "Course stages"}</h3>
+        <div class="legend">
+          <span class="pill"><i style="background:${KIND.orig[2]}"></i>${AR() ? "من الكورس" : "Course"} ${c("orig")}</span>
+          <span class="pill"><i style="background:${KIND.add[2]}"></i>${AR() ? "إضافي" : "Added"} ${c("add")}</span>
+          <span class="pill"><i style="background:${KIND.core[2]}"></i>${AR() ? "أساسي" : "Core"} ${c("core")}</span>
+        </div>
       </div>
 
       <div class="track">${COURSE.stages.map(st => {
         const all = st.modules.flatMap(m => m.lessons);
         const m = all.reduce((a, b) => a + b.min, 0);
         const dn = all.filter(l => done.has(l.id)).length;
-        return `<div class="srow" style="--sc:${ACC[st.id]}" data-first="${all[0].slug}" tabindex="0">
-          <div>
-            <div class="eyebrow">${st.id === "C" ? (AR() ? "الأساسيات" : "Core") : (AR() ? "المرحلة " + stLabel(st) : "Stage " + stLabel(st))}</div>
-            <h3>${esc(T(st.t).replace(/^(Stage \d:|المرحلة \d:)\s*/, ""))}</h3>
-            <div class="s2">${esc(T2(st.t).replace(/^(Stage \d:|المرحلة \d:)\s*/, ""))}</div>
+        return `<div class="scard" style="--sc:${ACC[st.id]}" data-first="${all[0].slug}" tabindex="0" role="link">
+          <div class="scard-h">
+            <span class="sno" style="background:${ACC[st.id]}">${stLabel(st)}</span>
+            <span class="eyebrow">${st.id === "C" ? (AR() ? "الأساسيات" : "Core") : (AR() ? "المرحلة " + stLabel(st) : "Stage " + stLabel(st))}</span>
+            <span class="cnt">${all.length} ${AR() ? "درس" : "lessons"} · ${m} ${AR() ? "د" : "min"}</span>
           </div>
-          <div class="mods">${st.modules.map(md => `<span>${esc(T(md.t).replace(/^(Module|الوحدة) \d+: /, ""))} · ${md.lessons.length}</span>`).join("")}</div>
-          <div class="meta"><b>${all.length}</b>${AR() ? "درس" : "lessons"} · ${m}m<div class="srow-prog"><i style="width:${(dn / all.length) * 100}%"></i></div></div>
+          <h3>${esc(strip(T(st.t)))}</h3>
+          <p class="mods">${st.modules.map(md => esc(T(md.t).replace(/^(Module|الوحدة) \d+: /, ""))).join(" · ")}</p>
+          <div class="scard-f"><div class="bar"><i style="width:${(dn / all.length) * 100}%"></i></div><span>${dn}/${all.length}</span></div>
         </div>`;
       }).join("")}</div>
 
       <div class="exam-cta-row">
         <div>
-          <h3>🎓 ${AR() ? "اختبار نهاية الدورة وتحديد مستوى مهندس الذكاء الاصطناعي" : "End-of-Course AI Engineer Level Assessment"}</h3>
-          <p>${AR() ? "36 سؤالًا تطبيقيًا ومعماريًا موزّنة الصعوبة · تقرير نقاط القوة والضعف · خطة مراجعة · شهادة قابلة للطباعة." : "36 weighted scenario & architecture questions · Stage mastery breakdown · Personalized study plan · Printable Certificate."}</p>
+          <h3>🎓 ${AR() ? "اختبر مستواك في نهاية الكورس" : "Check your level at the end"}</h3>
+          <p>${AR() ? `${nQs} سؤالًا عمليًا، تقرير بنقاط قوتك وضعفك، وخطة مراجعة وشهادة.` : `${nQs} practical questions, a strengths report, a study plan and a certificate.`}</p>
         </div>
-        <button class="btn pri" id="goExamBot" style="--sc:var(--accent)">${AR() ? "ابدأ اختبار تحديد المستوى ←" : "Launch Level Exam →"}</button>
+        <button class="btn pri" id="goExamBot" style="--sc:var(--accent)">${AR() ? "ابدأ الاختبار ←" : "Start the exam →"}</button>
       </div>`;
 
     $("#goContinue").onclick = () => location.hash = nextTodo.slug;
     $("#goExamHome").onclick = () => location.hash = "exam";
     $("#goExamBot").onclick = () => location.hash = "exam";
-    document.querySelectorAll(".srow").forEach(r => {
+    document.querySelectorAll(".scard").forEach(r => {
       const go = () => location.hash = r.dataset.first;
       r.addEventListener("click", go);
       r.addEventListener("keydown", e => e.key === "Enter" && go());
@@ -217,11 +233,11 @@
     const page = $("#page"); page.style.setProperty("--sc", l.acc);
     const mi = l.module.lessons.indexOf(l) + 1;
     const tabsList = [
-      ["slides", AR() ? "📊 الشرائح (PowerPoint)" : "📊 PowerPoint Deck"],
-      ["motion", AR() ? "🎬 فيديو الموشن الممتع" : "🎬 Motion Video Studio"],
-      ["image", AR() ? "🖼️ إنفوجرافيك" : "🖼️ Infographic"],
-      ["ar", "📖 الشرح العربي"],
-      ["en", "📖 English Guide"]
+      ["slides", AR() ? "الشرائح" : "Slides"],
+      ["motion", AR() ? "الفيديو" : "Video"],
+      ["image", AR() ? "الملخص والصور" : "Summary & visuals"],
+      ["ar", AR() ? "الشرح بالعربي" : "Arabic guide"],
+      ["en", AR() ? "الشرح بالإنجليزي" : "English guide"]
     ];
     page.innerHTML = `
       <div class="eyebrow">${l.stage.id === "C" ? (AR() ? "المفاهيم الأساسية" : "Core concepts") : (AR() ? "المرحلة " + stLabel(l.stage) : "Stage " + stLabel(l.stage))} · ${esc(T(l.module.t).replace(/:.*/, ""))} · ${AR() ? `الدرس ${mi} من ${l.module.lessons.length}` : `lesson ${mi} of ${l.module.lessons.length}`}</div>
@@ -230,11 +246,10 @@
           <h2>${esc(l.id)} · ${esc(T(l.t))}</h2>
           <h3>${esc(T2(l.t))}</h3>
           <div class="chips">
-            <span class="chip" style="border-color:${k[2]};color:${k[2]}">${T(k)}</span>
+            <span class="chip"><i style="background:${k[2]}"></i>${T(k)}</span>
             <span class="chip">⏱ ${l.min} ${AR() ? "دقيقة" : "min"}</span>
-            <span class="chip">✦ ${l.p.length} ${AR() ? "نقاط رئيسية" : "key points"}</span>
-            ${l.ex ? `<span class="chip">💻 ${AR() ? "مثال كود عملي" : "Code example"}</span>` : ""}
-            <span class="chip">🎬 ${l.v}</span>
+            <span class="chip">${l.p.length} ${AR() ? "نقاط رئيسية" : "key points"}</span>
+            ${l.ex ? `<span class="chip">${AR() ? "فيه مثال كود" : "Includes code"}</span>` : ""}
           </div>
         </div>
         <button class="btn ${done.has(l.id) ? "done" : ""}" id="doneBtn">${done.has(l.id) ? (AR() ? "✓ مكتمل" : "✓ Completed") : (AR() ? "تحديد كمكتمل" : "Mark complete")}</button>
@@ -471,18 +486,18 @@
     show(0);
   }
 
-  // ---------- Motion Video Studio (Full Fun Explainer + Quick Recap + SFX + Optional TTS) ----------
+  // ---------- Motion Video Studio (Full Fun Explainer + Quick Recap + SFX + Neural Voiceover) ----------
   function motion(l, next, p) {
     const { chapters: C, total } = buildChapters(l, next, src(l), motionMode);
     p.innerHTML = `
       <div class="motion-head">
         <div class="mode-switch" id="mMode">
           <button data-m="full" class="${motionMode === "full" ? "on" : ""}">🎬 ${AR() ? "فيديو الشرح الممتع الطويل" : "Full Fun Explainer"} (${motionMode === "full" ? fmt(total) : "~1:45"})</button>
-          <button data-m="quick" class="${motionMode === "quick" ? "on" : ""}">⚡ ${AR() ? "ملخص سريع" : "Quick Recap"} (~0:38)</button>
+          <button data-m="quick" class="${motionMode === "quick" ? "on" : ""}">⚡ ${AR() ? "ملخص سريع" : "Quick Recap"} (~0:45)</button>
         </div>
         <div class="motion-toggles">
           <button id="sfxBtn" class="${sfxOn ? "on" : ""}">${sfxOn ? "🔊" : "🔇"} ${AR() ? "مؤثرات" : "SFX"}</button>
-          <button id="ttsBtn" class="${ttsOn ? "on" : ""}">🎙️ ${AR() ? "تعليق صوتي" : "Voiceover"}</button>
+          <button id="ttsBtn" class="${ttsOn ? "on" : ""}">${ttsOn ? "🎙️" : "🔇"} ${AR() ? "تعليق صوتي طبيعي" : "Neural Voice"}</button>
           <button id="subBtn">CC: ${subMode === "both" ? (AR() ? "ثنائي" : "EN+AR") : subMode.toUpperCase()}</button>
         </div>
       </div>
@@ -504,22 +519,98 @@
         <div class="chapters" id="chs">${C.map((c, i) => `<button data-i="${i}"><small>${fmt(c.start)} · ${Math.round(c.dur)}s</small>${esc(T(c.name))}</button>`).join("")}</div>
       </div>
       <p style="font-size:12.5px;color:var(--muted);margin-top:10px">${AR()
-        ? `فيديو موشن تفاعلي مدته ${fmt(total)} مقسم إلى ${C.length} مشاهد: مقدمة وتشويق، قصة وتشبيه، معمارية متحركة، شرح النقاط، ${l.ex ? "كود عملي، " : ""}خطأ شائع ونصيحة خبير، تحدي فهم سريع، وخلاصة.`
-        : `A ${fmt(total)} multi-act animated motion explainer across ${C.length} scenes: hook, analogy story, live visual architecture, deep-dive points, ${l.ex ? "animated code walkthrough, " : ""}mistake vs pro tip, interactive brain check, and grand recap.`}</p>`;
+        ? `فيديو موشن تفاعلي مدته ${fmt(total)} مقسم إلى ${C.length} مشاهد مع تعليق صوتي عصبي متزامن لا ينقطع: مقدمة وتشويق، قصة وتشبيه، معمارية متحركة، شرح النقاط، ${l.ex ? "كود عملي، " : ""}خطأ شائع ونصيحة خبير، تحدي فهم سريع، وخلاصة.`
+        : `A ${fmt(total)} multi-act animated motion explainer across ${C.length} scenes with synced voiceover: hook, analogy story, live visual architecture, deep-dive points, ${l.ex ? "animated code walkthrough, " : ""}mistake vs pro tip, interactive brain check, and grand recap.`}</p>`;
 
     const screen = $("#screen"), segs = [...p.querySelectorAll(".tl .s i")], chs = [...p.querySelectorAll("#chs button")];
     let t = 0, playing = true, speed = 1, cur = -1, svg = null, last = performance.now(), raf;
     const speeds = [1, 1.25, 1.5, 2, 0.75];
 
-    function speakCaption(cap) {
-      if (!ttsOn || !window.speechSynthesis) return;
+    // Synced Neural Audio + Natural SpeechSynthesis Fallback (never cuts off mid-sentence)
+    let activeAudio = null, audioBusy = false, audioToken = 0, quizTimer = null;
+    const preloaded = {};
+    function preloadChapter(ci) {
+      const ch = C[ci];
+      if (!ch || !ch.clips) return;
+      ch.clips.forEach(cl => {
+        if (!preloaded[cl.k]) {
+          const a = new Audio("video/out/tts/" + cl.k + ".mp3");
+          a.preload = "auto";
+          preloaded[cl.k] = a;
+        }
+      });
+    }
+    function stopAudio() {
+      audioToken++;
+      audioBusy = false;
+      if (quizTimer) { clearTimeout(quizTimer); quizTimer = null; }
+      if (activeAudio) {
+        try { activeAudio.pause(); activeAudio.onended = null; activeAudio.onerror = null; } catch (e) { }
+        activeAudio = null;
+      }
+      try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) { }
+    }
+    function pickBestVoice(langPrefix) {
+      if (!window.speechSynthesis) return null;
+      const voices = window.speechSynthesis.getVoices() || [];
+      const matching = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith(langPrefix));
+      return matching.find(v => /natural|neural|online|google|premium|enhanced/i.test(v.name)) || matching[0] || null;
+    }
+    function speakFallback(text, langPrefix, token) {
+      if (!window.speechSynthesis || !text) { audioBusy = false; return; }
       try {
         window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(AR() ? cap[1] : cap[0]);
-        u.lang = AR() ? "ar-SA" : "en-US";
-        u.rate = Math.min(1.8, speed * 1.05);
+        const u = new SpeechSynthesisUtterance(text);
+        const v = pickBestVoice(langPrefix);
+        if (v) u.voice = v;
+        u.lang = langPrefix === "ar" ? "ar-SA" : "en-US";
+        u.rate = Math.min(1.6, speed);
+        u.pitch = 1.0;
+        const safety = setTimeout(() => { if (token === audioToken) audioBusy = false; }, Math.max(4000, text.length * 140 / speed));
+        u.onend = u.onerror = () => { clearTimeout(safety); if (token === audioToken) audioBusy = false; };
+        audioBusy = true;
         window.speechSynthesis.speak(u);
-      } catch (e) { }
+      } catch (e) { audioBusy = false; }
+    }
+    function playChapterAudio(ch) {
+      stopAudio();
+      if (!ttsOn || !playing) return;
+      const token = audioToken;
+      const useNeuralAr = (AR() || subMode !== "en") && ch.clips && ch.clips.length > 0;
+      if (!useNeuralAr) {
+        speakFallback(AR() ? ch.cap[1] : ch.cap[0], AR() ? "ar" : "en", token);
+        return;
+      }
+      audioBusy = true;
+      let idx = 0;
+      const playNext = () => {
+        if (token !== audioToken) return;
+        if (idx >= ch.clips.length) { audioBusy = false; return; }
+        const cl = ch.clips[idx++];
+        const a = new Audio("video/out/tts/" + cl.k + ".mp3");
+        a.playbackRate = speed;
+        activeAudio = a;
+        a.onended = () => {
+          if (token !== audioToken) return;
+          if (ch.kind === "quiz" && idx === 1 && ch.clips.length > 1) {
+            const pauseMs = Math.max(800, ((ch.quizPause || 3.5) * 1000) / speed);
+            quizTimer = setTimeout(playNext, pauseMs);
+          } else {
+            playNext();
+          }
+        };
+        a.onerror = () => {
+          if (token !== audioToken) return;
+          activeAudio = null;
+          speakFallback(AR() ? ch.cap[1] : ch.cap[0], AR() ? "ar" : "en", token);
+        };
+        a.play().catch(() => {
+          if (token !== audioToken) return;
+          // Autoplay blocked or file missing: fall back gracefully
+          speakFallback(AR() ? ch.cap[1] : ch.cap[0], AR() ? "ar" : "en", token);
+        });
+      };
+      playNext();
     }
 
     function renderCaps(cap) {
@@ -544,7 +635,8 @@
       if (isTransition && sfxOn && playing && window.MotionAudio) {
         window.MotionAudio.chime(440 + (ci % 5) * 60);
       }
-      if (playing) speakCaption(C[ci].cap);
+      preloadChapter(ci + 1);
+      if (playing) playChapterAudio(C[ci]);
     }
 
     function draw() {
@@ -557,9 +649,16 @@
     }
 
     function loop(now) {
-      const dt = (now - last) / 1000; last = now;
+      const dt = Math.min(0.1, (now - last) / 1000); last = now;
       if (playing) {
-        t += dt * speed;
+        const curCh = C[cur];
+        const chEnd = curCh ? curCh.start + curCh.dur : total;
+        if (audioBusy && t + dt * speed >= chEnd - 0.05) {
+          // Hold at end of current chapter until voiceover finishes — never cut off mid-sentence
+          t = chEnd - 0.05;
+        } else {
+          t += dt * speed;
+        }
         if (t >= total) { t = total; setPlay(false); $("#big").classList.add("show"); }
       }
       draw();
@@ -568,10 +667,26 @@
     function setPlay(v) {
       playing = v;
       $("#play").textContent = v ? "⏸" : "▶";
-      if (v) $("#big").classList.remove("show");
-      else if (window.speechSynthesis) try { window.speechSynthesis.cancel(); } catch (e) { }
+      if (v) {
+        $("#big").classList.remove("show");
+        if (activeAudio && activeAudio.paused && activeAudio.currentTime > 0 && !activeAudio.ended) {
+          activeAudio.play().catch(() => { });
+        } else if (ttsOn && cur >= 0 && !audioBusy) {
+          playChapterAudio(C[cur]);
+        }
+      } else {
+        if (activeAudio) try { activeAudio.pause(); } catch (e) { }
+        if (window.speechSynthesis) try { window.speechSynthesis.cancel(); } catch (e) { }
+      }
     }
-    function seek(nt) { t = Math.max(0, Math.min(total - 0.01, nt)); $("#big").classList.remove("show"); draw(); }
+    function seek(nt) {
+      t = Math.max(0, Math.min(total - 0.01, nt));
+      $("#big").classList.remove("show");
+      let ci = C.findIndex(c => t < c.start + c.dur);
+      if (ci < 0) ci = C.length - 1;
+      if (ci === cur && playing) playChapterAudio(C[ci]);
+      draw();
+    }
 
     $("#mMode").onclick = e => {
       const b = e.target.closest("button"); if (!b || b.dataset.m === motionMode) return;
@@ -585,10 +700,11 @@
       if (sfxOn && window.MotionAudio) window.MotionAudio.chime(587);
     };
     $("#ttsBtn").onclick = () => {
-      ttsOn = !ttsOn; store.set("aie-tts", ttsOn);
+      ttsOn = !ttsOn; store.set("aie-tts-v2", ttsOn);
       $("#ttsBtn").classList.toggle("on", ttsOn);
-      if (ttsOn && cur >= 0) speakCaption(C[cur].cap);
-      else if (window.speechSynthesis) try { window.speechSynthesis.cancel(); } catch (e) { }
+      $("#ttsBtn").textContent = `${ttsOn ? "🎙️" : "🔇"} ${AR() ? "تعليق صوتي طبيعي" : "Neural Voice"}`;
+      if (ttsOn && cur >= 0 && playing) playChapterAudio(C[cur]);
+      else stopAudio();
     };
     $("#subBtn").onclick = () => {
       const order = ["both", "ar", "en"];
@@ -601,7 +717,11 @@
     $("#play").onclick = () => { if (!playing && t >= total) seek(0); setPlay(!playing); };
     $("#big").onclick = () => { seek(0); setPlay(true); };
     $("#rep").onclick = () => { seek(0); setPlay(true); };
-    $("#spd").onclick = () => { speed = speeds[(speeds.indexOf(speed) + 1) % speeds.length]; $("#spd").textContent = speed + "×"; };
+    $("#spd").onclick = () => {
+      speed = speeds[(speeds.indexOf(speed) + 1) % speeds.length];
+      $("#spd").textContent = speed + "×";
+      if (activeAudio) activeAudio.playbackRate = speed;
+    };
     $("#tl").onclick = e => { const r = e.currentTarget.getBoundingClientRect(); seek((e.clientX - r.left) / r.width * total); };
     $("#chs").onclick = e => { const b = e.target.closest("button"); if (b) { seek(C[+b.dataset.i].start); setPlay(true); } };
     $("#fsv").onclick = () => { const d = $("#player"); try { document.fullscreenElement ? document.exitFullscreen() : d.requestFullscreen().catch(() => { }); } catch (e) { } };
@@ -613,32 +733,81 @@
     };
     document.addEventListener("keydown", key);
     raf = requestAnimationFrame(loop);
-    cleanups.push(() => { cancelAnimationFrame(raf); document.removeEventListener("keydown", key); });
+    cleanups.push(() => { stopAudio(); cancelAnimationFrame(raf); document.removeEventListener("keydown", key); });
   }
   const fmt = s => { s = Math.max(0, s); return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`; };
 
-  // ---------- Infographic Poster ----------
+  // ---------- Lesson Summary Image & Illustrative Images Gallery ----------
   function poster(l, p) {
     const enr = window.enrichLesson(l);
-    p.innerHTML = `<div class="poster">
-      <div class="ph"><div class="en">${esc(l.t[0])}</div><div class="ar">${esc(l.t[1])}</div></div>
-      <div class="pfig" id="pfig"><button class="pfig-btn" id="pfigPlay">▶ ${AR() ? "إعادة الحركة" : "Replay Animation"}</button></div>
-      <div class="pgrid">
-        <div class="pcol en"><h4>Key points</h4>${l.p.map((x, i) => `<div class="pitem"><b>${i + 1}</b><span>${esc(x[0])}</span></div>`).join("")}</div>
-        <div class="pcol ar"><h4>النقاط الرئيسية</h4>${l.p.map((x, i) => `<div class="pitem"><b>${i + 1}</b><span>${esc(x[1])}</span></div>`).join("")}</div>
-      </div>
-      <div class="poster-extra">
-        <div class="en"><strong style="color:var(--sc)">${ICONS[enr.icon] || "💡"} Mental Model:</strong> <span style="color:var(--muted)">${esc(enr.analogy[0])}</span></div>
-        <div class="ar"><strong style="color:var(--sc)">${ICONS[enr.icon] || "💡"} التشبيه المبسط:</strong> <span style="color:var(--muted)">${esc(enr.analogy[1])}</span></div>
+    const LV = window.LessonVisuals;
+    const summarySvg = LV ? LV.buildLessonSummarySVG(l, enr, ui) : "";
+    const illList = LV ? LV.buildLessonIllustrations(l, enr, ui) : [];
+
+    p.innerHTML = `<div class="vis-wrap">
+      <section class="vis-section">
+        <div class="vis-bar">
+          <div>
+            <h3>🖼️ ${AR() ? "صورة ملخص الدرس الشاملة" : "Lesson Summary Image (Cheat Sheet)"}</h3>
+            <p>${AR() ? "بطاقة بصرية تلخص فكرة الدرس، التشبيه، النقاط الأساسية، والخطأ الشائع في صورة واحدة." : "A complete visual cheat-sheet summarizing the overview, mental model, key points, and pro tips."}</p>
+          </div>
+          <button class="btn pri" id="dlSummaryPng">⬇ ${AR() ? "تحميل صورة الملخص (PNG)" : "Download Summary PNG"}</button>
+        </div>
+        <div class="vis-summary-frame" id="sumFrame">${summarySvg}</div>
+      </section>
+
+      <section class="vis-section">
+        <div class="vis-bar">
+          <div>
+            <h3>🎨 ${AR() ? "صور توضيحية للدرس" : "Illustrative Lesson Visuals"} (${illList.length})</h3>
+            <p>${AR() ? "رسوم توضيحية مخصّصة لشرح آلية العمل والتشبيه الذهني والمقارنة الهندسية." : "Custom visual diagrams illustrating the architecture, mental model, and engineering trade-offs."}</p>
+          </div>
+        </div>
+        <div class="vis-gallery" id="visGallery">
+          ${illList.map((item, idx) => `
+            <div class="vis-card" data-idx="${idx}">
+              <div class="vis-card-head">
+                <div>
+                  <b>${esc(item.title)}</b>
+                  <small>${esc(item.desc)}</small>
+                </div>
+                <button class="vis-dl-btn" data-dl="${idx}">⬇ PNG</button>
+              </div>
+              <div class="vis-card-fig" id="visFig${idx}">${item.svg}</div>
+            </div>
+          `).join("")}
+        </div>
+      </section>
+
+      <div class="poster">
+        <div class="ph"><div class="en">${esc(l.t[0])}</div><div class="ar">${esc(l.t[1])}</div></div>
+        <div class="pgrid">
+          <div class="pcol en"><h4>Key points</h4>${l.p.map((x, i) => `<div class="pitem"><b>${i + 1}</b><span>${esc(x[0])}</span></div>`).join("")}</div>
+          <div class="pcol ar"><h4>النقاط الرئيسية</h4>${l.p.map((x, i) => `<div class="pitem"><b>${i + 1}</b><span>${esc(x[1])}</span></div>`).join("")}</div>
+        </div>
+        <div class="poster-extra">
+          <div class="en"><strong style="color:var(--sc)">${ICONS[enr.icon] || "💡"} Mental Model:</strong> <span style="color:var(--muted)">${esc(enr.analogy[0])}</span></div>
+          <div class="ar"><strong style="color:var(--sc)">${ICONS[enr.icon] || "💡"} التشبيه المبسط:</strong> <span style="color:var(--muted)">${esc(enr.analogy[1])}</span></div>
+        </div>
       </div>
     </div>`;
-    const fig = $("#pfig");
-    fig.insertBefore(makeSceneSVG(l), fig.firstChild);
-    freezeIn(fig);
-    $("#pfigPlay").onclick = () => {
-      const old = fig.querySelector("svg"); if (old) old.remove();
-      fig.insertBefore(makeSceneSVG(l), fig.firstChild);
-    };
+
+    freezeIn($("#visGallery"));
+    const dlSum = $("#dlSummaryPng");
+    if (dlSum && LV) {
+      dlSum.onclick = () => {
+        const svgEl = $("#sumFrame svg");
+        if (svgEl) LV.downloadSvgAsPng(svgEl, `${l.id}-summary-${ui}.png`);
+      };
+    }
+    p.querySelectorAll("[data-dl]").forEach(btn => {
+      btn.onclick = () => {
+        const idx = +btn.dataset.dl;
+        const item = illList[idx];
+        const svgEl = $(`#visFig${idx} svg`);
+        if (svgEl && LV) LV.downloadSvgAsPng(svgEl, `${l.id}-${item.id}.png`);
+      };
+    });
   }
 
   // ---------- Enriched Article (with Syntax Highlighting + Copy + Interactive Mini-Check) ----------
@@ -659,6 +828,55 @@
       </div>
 
       <h4>${L.ov}</h4><p>${esc(l.d[i])}</p>
+      ${window.LessonDeepDive ? (() => {
+        const dd = window.LessonDeepDive.getLessonDeepDive(l);
+        const terms = window.LessonDeepDive.getLessonGlossary(l);
+        return `
+          <div class="deep-box">
+            <h4>🔬 ${A ? "الشرح الهندسي المعمّق: كيف يعمل تقنيًا؟" : "Technical Deep Dive: Under the Hood"}</h4>
+            <p>${esc(dd.how[i])}</p>
+            <div class="deep-metric">📏 ${esc(dd.metrics[i])}</div>
+          </div>
+
+          <div class="gloss-box">
+            <h4>📖 ${A ? "شرح المصطلحات المذكورة في هذا الدرس (بدون ترجمة حرفية)" : "Technical Terms Explained"}</h4>
+            <div class="gloss-grid">
+              ${terms.map(t => `
+                <div class="gloss-card">
+                  <div class="gloss-title">
+                    <b>${esc(A ? t.ar : t.en)}</b>
+                    <small>${esc(A ? t.en : t.ar)}</small>
+                  </div>
+                  <p>${esc(t.def[i])}</p>
+                  <div class="gloss-ex"><span>${A ? "مثال:" : "Example:"}</span> ${esc(t.ex[i])}</div>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+
+          <div class="industry-box">
+            <h4>🌐 ${A ? "محتوى وممارسات من أقوى المصادر والشركات العالمية" : "Authoritative Industry & Research Sources"}</h4>
+            <div class="ind-grid">
+              ${dd.sources.map(srcItem => `
+                <a class="ind-card" href="${esc(srcItem.url)}" target="_blank" rel="noopener">
+                  <span class="ind-org">${esc(srcItem.org)}</span>
+                  <b>${esc(srcItem.title)} ↗</b>
+                  <p>${esc(srcItem.insight[i])}</p>
+                </a>
+              `).join("")}
+            </div>
+          </div>
+        `;
+      })() : ""}
+      ${window.LessonVisuals ? `
+        <div class="article-vis">
+          <div class="vis-bar">
+            <b>🖼️ ${A ? "صورة ملخص الدرس" : "Lesson Summary Image"}</b>
+            <button class="vis-dl-btn" id="artDlSum">⬇ ${A ? "تحميل PNG" : "Download PNG"}</button>
+          </div>
+          <div class="vis-summary-frame" id="artSumFrame">${window.LessonVisuals.buildLessonSummarySVG(l, enr, lang)}</div>
+        </div>
+      ` : ""}
       <h4>${L.kp}</h4><ol>${l.p.map(x => `<li>${esc(x[i])}</li>`).join("")}</ol>
       <h4>${L.dg}</h4><p>${esc(l.vl.join(A ? " ← " : " → "))}</p>
 
@@ -689,6 +907,13 @@
         setTimeout(() => cpBtn.textContent = L.cp, 1600);
       };
     }
+    const artDlSum = $("#artDlSum");
+    if (artDlSum && window.LessonVisuals) {
+      artDlSum.onclick = () => {
+        const svgEl = $("#artSumFrame svg");
+        if (svgEl) window.LessonVisuals.downloadSvgAsPng(svgEl, `${l.id}-summary-${lang}.png`);
+      };
+    }
 
     p.querySelectorAll(".mq-opt").forEach(btn => btn.onclick = () => {
       const idx = +btn.dataset.idx, ok = idx === q.ans;
@@ -699,7 +924,7 @@
       });
       const fb = $("#mqFb");
       fb.style.display = "block";
-      fb.innerHTML = `<strong style="color:${ok ? "var(--ok)" : "var(--bad)"}">${ok ? (A ? "✓ إجابة ممتازة!" : "✓ Spot on!") : (A ? "✗ ليست تمامًا — إليك الصحيح:" : "✗ Not quite — here's why:")}</strong> ${esc(q.why[i])}`;
+      fb.innerHTML = `<strong style="color:${ok ? "var(--ok-ink)" : "var(--bad-ink)"}">${ok ? (A ? "✓ إجابة ممتازة!" : "✓ Spot on!") : (A ? "✗ ليست تمامًا — إليك الصحيح:" : "✗ Not quite — here's why:")}</strong> ${esc(q.why[i])}`;
     });
   }
 

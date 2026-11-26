@@ -483,7 +483,153 @@
         ["Disabling authentication on the model server.", "تعطيل المصادقة على خادم النموذج."]
       ], ans: 1,
       exp: ["vLLM's PagedAttention & continuous batching maximize concurrent GPU throughput, while FP8/AWQ quantization cuts VRAM 2–4× with minimal quality drop.",
-            "تقنيات PagedAttention والتجميع المستمر في vLLM تعظّم كثافة الطلبات، بينما يقلص التكميم ذاكرة VRAM بـ 2–4 أضعاف."] }
+            "تقنيات PagedAttention والتجميع المستمر في vLLM تعظّم كثافة الطلبات، بينما يقلص التكميم ذاكرة VRAM بـ 2–4 أضعاف."] },
+
+    // ===== STAGE 6: CODING WITH AI (S6) =====
+    { id: "Q37", stage: "S6", lesson: "W1.3", diff: 1,
+      q: ["Before asking an AI coding agent to implement a multi-file feature, what single habit prevents the most wasted rework?",
+          "قبل أن تطلب من وكيل البرمجة تنفيذ ميزة تمس عدة ملفات، ما العادة الواحدة التي تمنع أكبر قدر من إعادة العمل والأخطاء؟"],
+      opts: [
+        ["Writing a concise spec and reviewing an Implementation Plan before any code is edited.", "كتابة مواصفة مختصرة ومراجعة خطة التنفيذ (Implementation Plan) قبل تعديل أي سطر كود."],
+        ["Pasting the entire repository into a single chat message.", "لصق كل ملفات المستودع في رسالة محادثة واحدة."],
+        ["Disabling all linters and unit tests until the end of the month.", "تعطيل كل أدوات الـ Linter والاختبارات حتى نهاية الشهر."],
+        ["Asking the agent to refactor unrelated files at the same time.", "الطلب من الوكيل إعادة هيكلة ملفات غير مرتبطة في الوقت نفسه."]
+      ], ans: 0,
+      exp: ["Plan-first / spec-driven coding catches wrong architecture assumptions in seconds before the agent modifies dozens of files.",
+            "التخطيط المسبق والمبني على المواصفات يكشف الافتراضات الخاطئة في ثوانٍ قبل تعديل عشرات الملفات."] },
+
+    { id: "Q38", stage: "S6", lesson: "W2.2", diff: 1,
+      q: ["Why do 800-line AI Rules files (`AGENTS.md` / `CLAUDE.md`) often perform WORSE than concise 100-line rules files?",
+          "لماذا تؤدي ملفات القواعد الضخمة (800 سطر) في `AGENTS.md` أو `CLAUDE.md` غالبًا أداءً أسوأ من ملف موجز من 100 سطر؟"],
+      opts: [
+        ["Because LLMs refuse to read files longer than 50 lines.", "لأن النماذج ترفض قراءة أي ملف أطول من 50 سطرًا."],
+        ["Because bloated rules dilute the model's attention budget, causing it to ignore critical constraints buried in the middle.", "لأن الحشو يشتت ميزانية انتباه النموذج فيتجاهل القيود الحرجة المدفونة في المنتصف."],
+        ["Because Markdown headers break syntax highlighting.", "لأن عناوين Markdown تعطل تلوين الكود."],
+        ["Because Rules files cannot contain shell commands.", "لأن ملفات القواعد لا يمكن أن تحتوي أوامر طرفية."]
+      ], ans: 1,
+      exp: ["Rules are injected on every turn; concise, concrete DO/DON'T rules + exact test commands earn their tokens without diluting attention.",
+            "القواعد تُحقن في كل دور؛ لذا فإن القواعد الموجزة والمحددة مع أوامر الاختبار تحقق أعلى التزام دون تشتيت الانتباه."] },
+
+    { id: "Q39", stage: "S6", lesson: "W3.1", diff: 2,
+      q: ["What is the key architectural advantage of an Agent Skill (`SKILL.md`) over putting a specialized multi-step playbook inside your always-on Rules file?",
+          "ما الميزة المعمارية الأساسية لمهارة الوكيل (`SKILL.md`) مقارنة بوضع كتيّب إجراءات متخصص داخل ملف القواعد الدائم (Rules)؟"],
+      opts: [
+        ["Progressive Disclosure: only a tiny description loads at startup, and the full instructions + scripts load ONLY when a matching task occurs.", "الكشف التدريجي (Progressive Disclosure): يُحمَّل وصف قصير جدًا عند البدء، ولا تُحمَّل التعليمات الكاملة والسكربتات إلا عند تطابق المهمة."],
+        ["Skills bypass all Git version control.", "المهارات تتجاوز نظام Git بالكامل."],
+        ["Skills disable the model's context window limit.", "المهارات تلغي حد نافذة السياق للنموذج."],
+        ["Skills automatically deploy code to production without tests.", "المهارات تنشر الكود تلقائيًا للإنتاج بدون اختبارات."]
+      ], ans: 0,
+      exp: ["Skills give your agent deep specialized expertise on demand with near-zero constant token overhead.",
+            "تمنحك المهارات خبرة عميقة عند الحاجة فقط دون استهلاك مستمر لميزانية السياق في كل محادثة."] },
+
+    { id: "Q40", stage: "S6", lesson: "W3.3", diff: 2,
+      q: ["You want to guarantee 100% deterministically that your coding agent NEVER edits `.env` files and ALWAYS runs ESLint after modifying any `.ts` file. Which primitive should you use?",
+          "تريد ضمانًا حتميًا 100% أن وكيل البرمجة لن يعدّل ملفات `.env` أبدًا، وأنه سيشغّل ESLint تلقائيًا بعد كل تعديل لملف `.ts`. أي أداة تستخدم؟"],
+      opts: [
+        ["Writing 'please be very careful' in bold inside the chat prompt.", "كتابة «أرجوك كن حذرًا جدًا» بخط عريض في المحادثة."],
+        ["PreToolUse and PostToolUse Hooks (deterministic shell scripts triggered on tool events).", "Hooks قبل وبعد تنفيذ الأدوات (سكربتات حتمية تعمل تلقائيًا عند كل حدث أداة)."],
+        ["Increasing the model temperature to 1.2.", "رفع معامل Temperature إلى 1.2."],
+        ["Adding 50 unrelated MCP servers.", "إضافة 50 خادم MCP غير مرتبط."]
+      ], ans: 1,
+      exp: ["Prompts and Rules are probabilistic; Hooks execute deterministically on every matching tool call to block forbidden edits and enforce linting.",
+            "الأوامر والقواعد احتمالية، بينما تعمل الـ Hooks بشكل حتمي 100% عند كل استدعاء أداة لمنع التعديلات المحظورة وفرض الفحص."] },
+
+    { id: "Q41", stage: "S6", lesson: "W4.2", diff: 3,
+      q: ["A developer connects 14 third-party MCP servers to their IDE — including a Postgres MCP with admin credentials on production. What TWO serious problems does this create?",
+          "ربط مطوّر 14 خادم MCP ببيئة البرمجة — من ضمنها خادم Postgres بصلاحيات مدير على الإنتاج. ما المشكلتان الخطيرتان الناتجتان عن ذلك؟"],
+      opts: [
+        ["Faster responses and free cloud hosting.", "استجابات أسرع واستضافة سحابية مجانية."],
+        ["Severe Context Tax / tool bloat (burning tens of thousands of tokens per turn and confusing tool choice) + extreme security risk of destructive writes or prompt-injection exfiltration.", "ضريبة سياق وتضخم أدوات حاد (استهلاك عشرات آلاف الـ Tokens في كل رسالة وتشويش اختيار الأدوات) + خطر أمني جسيم بالحذف أو تسريب البيانات."],
+        ["Git branches are automatically merged.", "دمج فروع Git تلقائيًا."],
+        ["Syntax highlighting stops working in CSS files.", "توقف تلوين الكود في ملفات CSS."]
+      ], ans: 1,
+      exp: ["Keep only 2–5 needed MCP servers active per project, and enforce strictly read-only credentials on dev/staging databases.",
+            "فعّل فقط 2–5 خوادم MCP ضرورية للمشروع، وفرض صلاحيات القراءة فقط على قواعد بيانات التطوير دون الإنتاج أبدًا."] },
+
+    { id: "Q42", stage: "S6", lesson: "W3.4", diff: 3,
+      q: ["You want two autonomous coding agents to implement two independent features on the same repository simultaneously without overwriting each other's files or polluting one shared chat context. What is the cleanest setup?",
+          "تريد تشغيل وكيلي برمجة مستقلين لتنفيذ ميزتين مستقلتين في نفس المستودع بالتوازي دون تداخل ملفات أو تلوث سياق مشترك. ما الإعداد الأنسب؟"],
+      opts: [
+        ["Run both agents inside the exact same directory on `main` at the same time.", "تشغيل الوكيلين في نفس المجلد على فرع `main` في اللحظة نفسها."],
+        ["Create isolated Git Worktrees on separate feature branches, run an agent per worktree with its own session, and review each PR diff before merging.", "إنشاء Git Worktrees معزولة على فروع مستقلة، وتشغيل كل وكيل في مجلد وجلسة منفصلة، ومراجعة كل تعديل قبل الدمج."],
+        ["Copy-paste all code back and forth in one 200-turn chat.", "نسخ الكود ذهابًا وإيابًا داخل محادثة واحدة من 200 دور."],
+        ["Delete `git` history so there are no merge conflicts.", "حذف سجل `git` لمنع تعارضات الدمج."]
+      ], ans: 1,
+      exp: ["Git Worktrees give each agent an isolated working directory on its own branch while sharing one Git object store, eliminating file collisions and context pollution.",
+            "تمنح Git Worktrees كل وكيل مجلد عمل معزولًا على فرع مستقل ضمن نفس المستودع، فتمنع تضارب الملفات وتلوث السياق."] },
+
+    // ===== STAGE 7: FRONTIER AGENT ENGINEERING (S7) =====
+    { id: "Q43", stage: "S7", lesson: "F1.1", diff: 1,
+      q: ["In modern Harness Engineering (`Agent = Model + Harness`), what does the Agent Harness encompass?",
+          "في هندسة الـ Harness الحديثة (`الوكيل = النموذج + الـ Harness`)، ماذا يشمل الـ Agent Harness تحديدًا؟"],
+      opts: [
+        ["Only the neural network weights stored on the GPU.", "أوزان الشبكة العصبية المخزّنة على كرت الشاشة فقط."],
+        ["All the software scaffolding wrapped around the model: execution loop, tool/MCP router, context compaction, durable state, hooks/guardrails, and verification loops.", "كل البنية البرمجية المحيطة بالنموذج: حلقة التنفيذ، موجّه الأدوات/MCP، ضغط السياق، الحالة الدائمة، الـ Hooks والضوابط، وحلقات التحقق."],
+        ["A CSS theme file for the chat bubble.", "ملف تنسيق CSS لصندوق المحادثة."],
+        ["The billing invoice PDF from the cloud provider.", "فاتورة الاستهلاك الشهرية من مزود السحابة."]
+      ], ans: 1,
+      exp: ["The model supplies reasoning; the harness turns that raw intelligence into a reliable, verifiable, state-preserving system.",
+            "النموذج يقدّم الاستدلال، والـ Harness يحوّله إلى نظام موثوق يحفظ الحالة ويتحقق من نتائجه."] },
+
+    { id: "Q44", stage: "S7", lesson: "F1.2", diff: 2,
+      q: ["How do production Long-Running Agent harnesses complete multi-hour engineering projects reliably without degrading from context limits?",
+          "كيف تنجز أنظمة الوكلاء طويلي التشغيل (Long-Running Agents) مشاريع تمتد لساعات بموثوقية دون التدهور بسبب حدود السياق؟"],
+      opts: [
+        ["By cramming 200 turns into one giant chat and hoping the model remembers turn 1.", "بحشر 200 دور في محادثة واحدة عملاقة والأمل أن يتذكر النموذج الدور الأول."],
+        ["By designing for clean context resets: an Initializer creates structured task state (`features.json`), and each fresh worker session completes one verified Git-committed slice and writes a concise handoff log.", "بالتصميم للتعافي بين الجلسات النظيفة: يبني مُهيّئ قائمة مهام مهيكلة (`features.json`)، وتنجز كل جلسة جديدة شريحة مُتحقَّق منها في Git مع مذكرة تسليم مختصرة."],
+        ["By turning off unit tests so sessions finish faster.", "بتعطيل الاختبارات حتى تنتهي الجلسات أسرع."],
+        ["By raising model temperature to 1.8.", "برفع معامل العشوائية Temperature إلى 1.8."]
+      ], ans: 1,
+      exp: ["Durable filesystem/Git artifacts + structured feature trackers let fresh-context sessions continue indefinitely without amnesia.",
+            "ملفات الحالة الدائمة وGit وقوائم الميزات المهيكلة تتيح لكل جلسة نظيفة المتابعة دون فقدان ذاكرة أو تآكل سياق."] },
+
+    { id: "Q45", stage: "S7", lesson: "F2.2", diff: 2,
+      q: ["Why does a governed gateway like Portainer-Command replace handing raw admin `kubeconfig` files directly to AI agents?",
+          "لماذا تُستبدل مشاركة ملف `kubeconfig` الإداري مباشرة مع وكلاء الذكاء الاصطناعي ببوابة حوكمة مثل Portainer-Command؟"],
+      opts: [
+        ["Because Kubernetes does not support YAML files.", "لأن Kubernetes لا يدعم ملفات YAML."],
+        ["It separates human and AI access via expiring read-only MCP sessions, routes every proposed infra change through audited GitOps Pull Requests (zero direct writes), and provides a fleet-wide Emergency Halt switch.", "لأنها تفصل صلاحيات الإنسان عن الوكيل بجلسات MCP مؤقتة للقراءة فقط، وتحوّل كل تعديل مقترح إلى Pull Request عبر GitOps بلا كتابة مباشرة، مع زر إيقاف طارئ شامل."],
+        ["Because it lets AI agents delete production namespaces faster.", "لأنها تسمح للوكلاء بحذف بيئات الإنتاج بسرعة أكبر."],
+        ["Because it eliminates the need for Git version control.", "لأنها تلغي الحاجة لنظام Git."]
+      ], ans: 1,
+      exp: ["Read-only MCP diagnosis + GitOps PRs + Emergency Halt give teams AI troubleshooting speed without unconstrained production write risk.",
+            "التشخيص بالقراءة فقط + GitOps PR + زر الإيقاف الطارئ تمنحك سرعة التشخيص بالـ AI دون تعريض الإنتاج للتعديل المباشر."] },
+
+    { id: "Q46", stage: "S7", lesson: "F3.1", diff: 1,
+      q: ["How do the three modern open agent protocols — MCP, A2A, and AG-UI — divide responsibilities cleanly?",
+          "كيف تتوزّع الأدوار بوضوح بين بروتوكولات الوكلاء المفتوحة الثلاثة: MCP وA2A وAG-UI؟"],
+      opts: [
+        ["They are three competing versions of the exact same database driver.", "إنها ثلاث نسخ متنافسة لنفس مشغّل قواعد البيانات."],
+        ["MCP connects Agent ↔ Tools/Data; A2A connects Agent ↔ Agent across frameworks via Agent Cards; AG-UI connects Agent ↔ User Interface with live state & widgets.", "يربط MCP الوكيل بالأدوات والبيانات؛ ويربط A2A الوكيل بوكلاء آخرين عبر بطاقات Agent Cards؛ ويربط AG-UI الوكيل بواجهة المستخدم التفاعلية."],
+        ["AG-UI trains GPU weights while MCP renders CSS animations.", "يدرّب AG-UI أوزان النماذج بينما يعرض MCP حركات CSS."],
+        ["A2A replaces HTTP and TLS on the internet.", "يستبدل A2A بروتوكولي HTTP وTLS على الإنترنت."]
+      ], ans: 1,
+      exp: ["MCP (vertical tools), A2A (horizontal multi-agent delegation), and AG-UI (frontend interaction) are complementary layers of the agent protocol stack.",
+            "تشكل MCP (الأدوات) وA2A (التواصل بين الوكلاء) وAG-UI (الواجهة) ثلاث طبقات متكاملة وليست متنافسة."] },
+
+    { id: "Q47", stage: "S7", lesson: "F1.3", diff: 3,
+      q: ["Why do production harnesses pair a Generator agent with an independent, fresh-context Evaluator agent + deterministic test runner instead of asking the Generator 'Is your code good?'",
+          "لماذا تقرن الـ Harnesses الإنتاجية وكيلًا مُولِّدًا (Generator) بوكيل مُقيِّم مستقل بسياق جديد (Evaluator) مع اختبارات حتمية بدل سؤال المُولِّد «هل كودك جيد؟»؟"],
+      opts: [
+        ["Because LLMs exhibit sycophantic self-grading bias in the same context, whereas an independent Evaluator + objective tests catch real bugs and edge cases without confirmation bias.", "لأن النماذج تميل لمجاملة نفسها في نفس السياق، بينما يكشف المُقيِّم المستقل مع الاختبارات الموضوعية الأخطاء الحقيقية دون تحيز تأكيدي."],
+        ["Because Generators cannot write Python functions.", "لأن الوكيل المُولِّد لا يستطيع كتابة دوال بايثون."],
+        ["To make the system ignore all compiler errors.", "لجعل النظام يتجاهل أخطاء المترجم."],
+        ["To run an infinite loop with no stop condition.", "لتشغيل حلقة لا نهائية بلا شرط توقف."]
+      ], ans: 0,
+      exp: ["Decoupling generation from evaluation breaks confirmation bias — always combine deterministic tests first, an independent Evaluator second, and a max-cycle cap.",
+            "فصل التوليد عن التقييم يكسر التحيز التأكيدي — مع البدء بالاختبارات الحتمية ثم مُقيِّم مستقل وتحديد سقف لعدد الدورات."] },
+
+    { id: "Q48", stage: "S7", lesson: "F3.4", diff: 3,
+      q: ["Your team has 200 labeled eval examples and needs to migrate a complex multi-step RAG pipeline from an expensive flagship model to a 5× cheaper open model without losing accuracy. Which paradigm automates this cleanly?",
+          "يملك فريقك 200 مثال تقييم مصنّف ويحتاج لترحيل خط RAG معقد من نموذج باهظ إلى نموذج أرخص بـ 5 أضعاف دون فقدان الدقة. أي منهجية تؤتمت ذلك بكفاءة؟"],
+      opts: [
+        ["Manually guessing synonyms in a 300-line prompt string for two weeks.", "تخمين مرادفات يدويًا داخل أمر من 300 سطر لأسبوعين."],
+        ["Programmatic Prompt Optimization (e.g., DSPy): declare typed Signatures + your eval metric, and let an optimizer compile optimal instructions and few-shot examples for the new target model.", "التحسين البرمجي للأوامر (مثل DSPy): تعريف Signatures مهيكلة ومقياس التقييم، وترك المُحسِّن يُصرّف أفضل تعليمات وأمثلة Few-Shot للنموذج الجديد تلقائيًا."],
+        ["Deleting the eval dataset so accuracy cannot drop.", "حذف مجموعة التقييم حتى لا ينخفض الرقم."],
+        ["Setting `max_tokens = 10` on every request.", "ضبط `max_tokens = 10` على كل طلب."]
+      ], ans: 1,
+      exp: ["DSPy decouples program logic (Signatures) from model-specific prompt prose, allowing rapid data-driven recompilation whenever you switch models.",
+            "يفصل DSPy منطق البرنامج عن صياغة الكلمات، مما يسمح بإعادة التحسين بالبيانات خلال دقائق عند تبديل النموذج."] }
   ];
 
   function getLevel(pct) {
@@ -495,7 +641,7 @@
     const AR = ui === "ar";
     const T = p => AR ? p[1] : p[0];
     const STAGE_NAMES = Object.fromEntries(stages.map(s => [s.id, s.t]));
-    const STAGE_ACC = { C: "#f5a524", S1: "#3db4f2", S2: "#22c3a6", S3: "#f2795b", S4: "#e8618c", S5: "#9ccc65" };
+    const STAGE_ACC = { C: "#f5a524", S1: "#3db4f2", S2: "#22c3a6", S3: "#f2795b", S4: "#e8618c", S5: "#9ccc65", S6: "#a855f7", S7: "#06b6d4" };
 
     let state = {
       phase: "start", // start | running | results
@@ -526,9 +672,9 @@
         return pool;
       }
       if (mode === "quick") {
-        // 3 balanced questions (diff 1, 2, 3) from each of the 6 stages = 18 questions
+        // 3 balanced questions (diff 1, 2, 3) from each of the 8 stages = 24 questions
         const out = [];
-        ["C", "S1", "S2", "S3", "S4", "S5"].forEach(st => {
+        ["C", "S1", "S2", "S3", "S4", "S5", "S6", "S7"].forEach(st => {
           const sq = pool.filter(q => q.stage === st);
           const d1 = sq.filter(q => q.diff === 1)[0];
           const d2 = sq.filter(q => q.diff === 2)[0];
@@ -537,7 +683,7 @@
         });
         return out;
       }
-      // Full: all 36 questions (6 per stage)
+      // Full: all 48 questions (6 per stage)
       return pool;
     }
 
@@ -549,7 +695,7 @@
       state.ix = 0;
       state.answers = {};
       state.flags = new Set();
-      state.durSec = mode === "full" ? 30 * 60 : mode === "quick" ? 15 * 60 : 8 * 60;
+      state.durSec = mode === "full" ? 40 * 60 : mode === "quick" ? 20 * 60 : 8 * 60;
       state.remSec = state.durSec;
       state.startTs = Date.now();
       state.phase = "running";
@@ -624,8 +770,8 @@
               <div class="eyebrow" style="--sc:var(--accent)">${AR ? "اختبار تحديد المستوى الشامل · شهادة إتقان" : "COMPREHENSIVE LEVEL ASSESSMENT · CERTIFICATION"}</div>
               <h2>${AR ? "اختبار نهاية الدورة وتحديد المستوى" : "End-of-Course AI Engineer Level Exam"}</h2>
               <p>${AR
-                ? "اختبر جاهزيتك الحقيقية كمهندس ذكاء اصطناعي عبر 36 سؤالًا تطبيقيًا ومعماريًا موزّنة الصعوبة تغطي كل مراحل الكورس الست، واحصل على تشخيص دقيق لمستواك وخطة مراجعة مخصّصة وشهادة إنجاز."
-                : "Test your real-world AI Engineering readiness with 36 difficulty-weighted scenario and architecture questions across all 6 stages. Receive your exact AI Engineer level, stage-by-stage skill breakdown, personalized study plan, and certificate."}</p>
+                ? "اختبر جاهزيتك الحقيقية كمهندس ذكاء اصطناعي عبر 48 سؤالًا تطبيقيًا ومعماريًا موزّنة الصعوبة تغطي كل مراحل الكورس الثماني (بما فيها البرمجة مع AI وهندسة الـ Harness وPortainer وبروتوكولات A2A/AG-UI)، واحصل على تشخيص دقيق لمستواك وخطة مراجعة مخصّصة وشهادة إنجاز."
+                : "Test your real-world AI Engineering readiness with 48 difficulty-weighted scenario and architecture questions across all 8 stages (including Coding with AI, Harness Engineering, Portainer/Containers & A2A/AG-UI). Receive your exact AI Engineer level, stage-by-stage breakdown, study plan, and certificate."}</p>
               <div class="exam-levels-strip">
                 ${window.EXAM_LEVELS.map(lv => `
                   <div class="elv-pill" style="--lc:${lv.color}">
@@ -656,13 +802,13 @@
             <div class="emode featured">
               <div class="em-tag">${AR ? "موصى به لتحديد المستوى" : "RECOMMENDED FOR CERTIFICATION"}</div>
               <h3>🏆 ${AR ? "الاختبار الشامل لتحديد المستوى" : "Full Certification Level Exam"}</h3>
-              <p>${AR ? "36 سؤالًا موزّنة الصعوبة (6 أسئلة لكل مرحلة) · 30 دقيقة · شهادة مستوى وتقرير تشخيصي كامل." : "36 difficulty-weighted questions (6 per stage) · 30 min · Full diagnostic report & printable certificate."}</p>
+              <p>${AR ? "48 سؤالًا موزّنة الصعوبة (6 أسئلة لكل مرحلة) · 40 دقيقة · شهادة مستوى وتقرير تشخيصي كامل." : "48 difficulty-weighted questions (6 per stage) · 40 min · Full diagnostic report & printable certificate."}</p>
               <button class="btn pri" id="startFull">${AR ? "ابدأ الاختبار الشامل الآن ←" : "Start Full Exam →"}</button>
             </div>
             <div class="emode">
               <div class="em-tag">${AR ? "سريع ومتوازن" : "FAST & BALANCED"}</div>
               <h3>⚡ ${AR ? "اختبار تحديد المستوى السريع" : "Quick Placement Check"}</h3>
-              <p>${AR ? "18 سؤالًا متوازنًا (سهل/متوسط/متقدم من كل مرحلة) · 15 دقيقة · تقييم سريع ودقيق." : "18 balanced questions (Beginner/Mid/Senior per stage) · 15 min · Fast accurate placement."}</p>
+              <p>${AR ? "24 سؤالًا متوازنًا (سهل/متوسط/متقدم من كل مرحلة) · 20 دقيقة · تقييم سريع ودقيق." : "24 balanced questions (Beginner/Mid/Senior per stage) · 20 min · Fast accurate placement."}</p>
               <button class="btn" id="startQuick">${AR ? "ابدأ الاختبار السريع" : "Start Quick Check"}</button>
             </div>
             <div class="emode">
@@ -840,7 +986,7 @@
               <div class="dom-bars">
                 ${stageRows.map(s => `
                   <div class="dom-row">
-                    <div class="dom-h"><span>${esc(T(s.name))}</span><b class="num" style="color:${s.pct >= 75 ? "#4fd1a5" : s.pct >= 50 ? "#f5a524" : "#f2795b"}">${s.pct}% (${s.ok}/${s.total})</b></div>
+                    <div class="dom-h"><span>${esc(T(s.name))}</span><b class="num" style="color:${s.pct >= 75 ? "var(--ok-ink)" : s.pct >= 50 ? "var(--accent-ink)" : "var(--bad-ink)"}">${s.pct}% (${s.ok}/${s.total})</b></div>
                     <div class="dom-track"><i style="width:${s.pct}%;background:${s.acc}"></i></div>
                   </div>`).join("")}
               </div>
@@ -895,8 +1041,8 @@
                     <b>${esc(T(q.q))}</b>
                   </summary>
                   <div class="rev-body">
-                    ${picked != null ? `<div class="rev-p">${AR ? "إجابتك:" : "Your answer:"} <b style="color:${ok ? "#4fd1a5" : "#f2795b"}">${esc(T(q.opts[picked]))}</b></div>` : `<div class="rev-p" style="color:#f2795b">${AR ? "لم يتم الإجابة" : "Not answered"}</div>`}
-                    ${!ok ? `<div class="rev-p">${AR ? "الإجابة الصحيحة:" : "Correct answer:"} <b style="color:#4fd1a5">${esc(T(q.opts[q.ans]))}</b></div>` : ""}
+                    ${picked != null ? `<div class="rev-p">${AR ? "إجابتك:" : "Your answer:"} <b style="color:${ok ? "var(--ok-ink)" : "var(--bad-ink)"}">${esc(T(q.opts[picked]))}</b></div>` : `<div class="rev-p" style="color:var(--bad-ink)">${AR ? "لم يتم الإجابة" : "Not answered"}</div>`}
+                    ${!ok ? `<div class="rev-p">${AR ? "الإجابة الصحيحة:" : "Correct answer:"} <b style="color:var(--ok-ink)">${esc(T(q.opts[q.ans]))}</b></div>` : ""}
                     <p class="rev-exp">💡 ${esc(T(q.exp))}</p>
                     ${linked ? `<button class="btn rev-go" data-slug="${linked.slug}">📖 ${AR ? "راجع الدرس:" : "Review lesson:"} ${esc(linked.id)} · ${esc(T(linked.t))}</button>` : ""}
                   </div>

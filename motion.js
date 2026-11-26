@@ -257,8 +257,11 @@
   }
 
   // QUICK BRAIN CHECK ACT (Full Mode — Animated Countdown + Answer Reveal!)
-  function quizScene(l, enr) {
+  function quizScene(l, enr, revealAt) {
     const acc = l.acc, q = enr.quiz;
+    const rev = revealAt || 5.8;
+    const cdStart = Math.max(1.2, rev - 4.6);
+    const cdDur = Math.max(1.5, rev - cdStart);
     const qEn = wrap(q.q[0], 66)[0], qAr = wrap(q.q[1], 68)[0];
     let s = `<g opacity="0">${ap(0.1, -10)}
       <rect x="64" y="42" width="268" height="32" rx="16" fill="${acc}" opacity=".2"/>
@@ -273,10 +276,10 @@
       const tEn = wrap(opt[0], 72)[0], tAr = wrap(opt[1], 74)[0];
       s += `<g opacity="0">${ap(0.55 + idx * 0.25, 14)}
         <rect x="64" y="${y}" width="832" height="78" rx="14" fill="#101f33" stroke="#263f5d" stroke-width="1.8">
-          ${isWin ? `<animate attributeName="stroke" to="#4fd1a5" begin="5.8s" dur=".3s" fill="freeze"/><animate attributeName="fill" to="#0f2c2b" begin="5.8s" dur=".3s" fill="freeze"/>` : `<animate attributeName="opacity" to=".4" begin="5.8s" dur=".35s" fill="freeze"/>`}
+          ${isWin ? `<animate attributeName="stroke" to="#4fd1a5" begin="${rev}s" dur=".3s" fill="freeze"/><animate attributeName="fill" to="#0f2c2b" begin="${rev}s" dur=".3s" fill="freeze"/>` : `<animate attributeName="opacity" to=".4" begin="${rev}s" dur=".35s" fill="freeze"/>`}
         </rect>
         <rect x="82" y="${y + 20}" width="36" height="36" rx="9" fill="#1b3350">
-          ${isWin ? `<animate attributeName="fill" to="#4fd1a5" begin="5.8s" dur=".3s" fill="freeze"/>` : ""}
+          ${isWin ? `<animate attributeName="fill" to="#4fd1a5" begin="${rev}s" dur=".3s" fill="freeze"/>` : ""}
         </rect>
         <text x="100" y="${y + 44}" text-anchor="middle" font-family="${FM}" font-size="16" font-weight="700" fill="#fff">${letters[idx]}</text>
         <text x="136" y="${y + 34}" font-family="${FD}" font-size="15.5" font-weight="600" fill="#f1f5f9">${esc(tEn)}</text>
@@ -287,11 +290,11 @@
     // Countdown timer bar -> switches to "Correct Answer!"
     s += `<rect x="64" y="472" width="832" height="10" rx="5" fill="#16283f"/>
       <rect x="64" y="472" width="832" height="10" rx="5" fill="${acc}">
-        <animate attributeName="width" from="832" to="0" begin="1.2s" dur="4.6s" fill="freeze"/>
+        <animate attributeName="width" from="832" to="0" begin="${cdStart}s" dur="${cdDur}s" fill="freeze"/>
       </rect>
       <text x="480" y="508" text-anchor="middle" font-family="${FA}" font-size="15" font-weight="700" fill="#4fd1a5" opacity="0">
         ✓ Answer ${letters[q.ans]} · الإجابة الصحيحة هي (${letters[q.ans]})!
-        <animate attributeName="opacity" to="1" begin="5.8s" dur=".35s" fill="freeze"/>
+        <animate attributeName="opacity" to="1" begin="${rev}s" dur=".35s" fill="freeze"/>
       </text>`;
     return svgw(acc, s);
   }
@@ -361,32 +364,41 @@
     };
   })();
 
+  // Shared with the offline video renderer (video/page/arscenes.js)
+  window.MotionKit = { metaphorArt, langOf };
+
   window.buildChapters = function (l, next, src, mode) {
     const full = mode !== "quick";
     const enr = window.enrichLesson ? window.enrichLesson(l) : null;
+    const ttsList = window.TTS_MANIFEST && window.TTS_MANIFEST[l.id] ? window.TTS_MANIFEST[l.id] : null;
     const ch = [];
 
     if (full && enr) {
       // FULL FUN EXPLAINER VIDEO (~90–150 seconds!)
       ch.push({
+        kind: "lessonIntro",
         name: ["1. Intro & Hook", "١. المقدمة والتشويق"],
         dur: 8,
         cap: [`${l.t[0]} — ${enr.hook[0]}`, `${l.t[1]} — ${enr.hook[1]}`],
         svg: () => intro(l, enr, true)
       });
       ch.push({
+        kind: "analogy",
         name: ["2. Fun Analogy", "٢. القصة والتشبيه"],
         dur: 12,
         cap: [enr.analogy[0], enr.analogy[1]],
         svg: () => story(l, enr)
       });
       ch.push({
+        kind: "diagram",
         name: ["3. Visual System", "٣. كيف يعمل بصريًا"],
         dur: 14,
         cap: [l.d[0], l.d[1]],
         svg: () => renderScene(l.v, l.vl, l.acc)
       });
       l.p.forEach((p, i) => ch.push({
+        kind: "point",
+        ptIndex: i,
         name: [`Insight ${i + 1}`, `فكرة ${i + 1}`],
         dur: 10,
         cap: p,
@@ -394,6 +406,7 @@
       }));
       if (l.ex) {
         ch.push({
+          kind: "code",
           name: ["Live Code", "تطبيق بالكود"],
           dur: Math.max(12, 5 + l.ex.split("\n").length * 1.1),
           cap: ["Walk through this real production snippet line by line.", "تابع هذا المثال العملي سطرًا بسطر واربطه بما تعلمناه."],
@@ -401,18 +414,21 @@
         });
       }
       ch.push({
+        kind: "pitfall",
         name: ["Mistake vs Pro Tip", "فخ ونصيحة خبير"],
         dur: 11,
         cap: [`Avoid: ${enr.mistake[0]} Instead: ${enr.bestPractice[0]}`, `تجنّب: ${enr.mistake[1]} والأفضل: ${enr.bestPractice[1]}`],
         svg: () => pitfall(l, enr)
       });
       ch.push({
+        kind: "quiz",
         name: ["Brain Check", "تحدي سريع"],
         dur: 10,
         cap: [enr.quiz.q[0], enr.quiz.q[1]],
-        svg: () => quizScene(l, enr)
+        svg: null // built below once quiz timing is known
       });
       ch.push({
+        kind: "outro",
         name: ["Grand Recap", "الخلاصة الكبرى"],
         dur: 10,
         cap: [`Great job completing ${l.id}! Source: ${src[0]}`, `أحسنت بإتمام الدرس ${l.id}! المصدر: ${src[0]}`],
@@ -420,12 +436,44 @@
       });
     } else {
       // QUICK RECAP MODE (~35–45s)
-      ch.push({ name: ["Intro", "مقدمة"], dur: 4.5, cap: [l.t[0], l.t[1]], svg: () => intro(l, enr, false) });
-      ch.push({ name: ["How it works", "كيف يعمل"], dur: 8, cap: [firstSentence(l.d[0]), firstSentence(l.d[1])], svg: () => renderScene(l.v, l.vl, l.acc) });
-      l.p.forEach((p, i) => ch.push({ name: ["Point " + (i + 1), "نقطة " + (i + 1)], dur: 4.5, cap: p, svg: () => point(l, i, false) }));
-      if (l.ex) ch.push({ name: ["Example", "مثال"], dur: Math.max(5.5, 2 + l.ex.split("\n").length * 0.4), cap: ["Hands-on example", "مثال عملي"], svg: () => code(l) });
-      ch.push({ name: ["Takeaways", "الخلاصة"], dur: 5.5, cap: ["Key takeaways · Source: " + src[0], "الخلاصة · المصدر: " + src[0]], svg: () => outro(l, next) });
+      ch.push({ kind: "lessonIntro", name: ["Intro", "مقدمة"], dur: 6, cap: [l.t[0], l.t[1]], svg: () => intro(l, enr, false) });
+      ch.push({ kind: "diagram", name: ["How it works", "كيف يعمل"], dur: 9, cap: [firstSentence(l.d[0]), firstSentence(l.d[1])], svg: () => renderScene(l.v, l.vl, l.acc) });
+      l.p.forEach((p, i) => ch.push({ kind: "point", ptIndex: i, name: ["Point " + (i + 1), "نقطة " + (i + 1)], dur: 6, cap: p, svg: () => point(l, i, false) }));
+      if (l.ex) ch.push({ kind: "code", name: ["Example", "مثال"], dur: Math.max(7, 2.5 + l.ex.split("\n").length * 0.45), cap: ["Hands-on example", "مثال عملي"], svg: () => code(l) });
+      ch.push({ kind: "outro", name: ["Takeaways", "الخلاصة"], dur: 7, cap: ["Key takeaways · Source: " + src[0], "الخلاصة · المصدر: " + src[0]], svg: () => outro(l, next) });
     }
+
+    // Attach neural TTS clips & extend chapter durations so narration never cuts off
+    let ptSeen = 0;
+    ch.forEach(c => {
+      let tc = null;
+      if (ttsList) {
+        if (c.kind === "point") {
+          const pts = ttsList.filter(x => x.kind === "point");
+          tc = pts[c.ptIndex != null ? c.ptIndex : ptSeen++];
+        } else {
+          tc = ttsList.find(x => x.kind === c.kind);
+        }
+      }
+      if (tc && tc.clips && tc.clips.length) {
+        c.clips = tc.clips;
+        const speechDur = tc.clips.reduce((a, x) => a + x.d, 0);
+        if (c.kind === "quiz" && tc.clips.length >= 2) {
+          c.quizPause = 3.5;
+          const rev = 0.6 + tc.clips[0].d + c.quizPause;
+          c.dur = Math.max(c.dur, rev + 0.4 + tc.clips[1].d + 1.2);
+          c.svg = () => quizScene(l, enr, rev);
+        } else {
+          const gaps = (tc.clips.length - 1) * 0.45;
+          c.dur = Math.max(c.dur, speechDur + gaps + 1.4);
+        }
+        if (full) {
+          c.cap = [c.cap[0], tc.clips.map(x => x.t).join(" ")];
+        }
+      } else if (c.kind === "quiz" && !c.svg) {
+        c.svg = () => quizScene(l, enr, 5.8);
+      }
+    });
 
     let t = 0;
     ch.forEach(c => { c.start = t; t += c.dur; });
