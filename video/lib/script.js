@@ -14,6 +14,8 @@ const shortAr = s => clean(s).split(/[:—–]/)[0].trim();
 // Topic for «…»: short title, cut after a leading question ("ما هو النموذج؟ …" → "ما هو النموذج").
 const topicAr = s => { const t = shortAr(s); const q = t.indexOf("؟"); return (q > 0 ? t.slice(0, q) : t).trim(); };
 const NUM_F = { 2: "نقطتين أساسيتين", 3: "ثلاث نقاط أساسية", 4: "أربع نقاط أساسية", 5: "خمس نقاط أساسية", 6: "ست نقاط أساسية", 7: "سبع نقاط أساسية", 8: "ثماني نقاط أساسية" };
+// "N مراحل" spoken with the correct feminine number word.
+const STAGES_F = { 3: "ثلاث", 4: "أربع", 5: "خمس", 6: "ست", 7: "سبع", 8: "ثماني", 9: "تسع", 10: "عشر" };
 
 // "المرحلة 1:" → "المرحلة الأولى:" (spoken form only)
 function spokenOrdinals(s) {
@@ -53,8 +55,8 @@ function buildScript(course, opts) {
       clips: [clip(`أهلًا وسهلًا بكم في كورس مهندس الذكاء الاصطناعي، الشرح الكامل باللغة العربية.
         في هذا الكورس سنبني معًا المهارات التي يحتاجها مهندس الذكاء الاصطناعي اليوم:
         من فهم النماذج ونماذج اللغة الكبيرة، إلى بناء تطبيقات RAG والوكلاء،
-        وصولًا إلى التقييم والأمان والنشر في بيئة الإنتاج.
-        يضم الكورس ${flat.length} درسًا موزّعة على ${COURSE.stages.length === 6 ? "ست" : COURSE.stages.length} مراحل، ولكل درس شرح مرئي وتشبيه وأمثلة عملية واختبار سريع. لنبدأ!`)],
+        وصولًا إلى التقييم والأمان والنشر في بيئة الإنتاج${COURSE.stages.length > 6 ? "، ثم البرمجة بمساعدة الذكاء الاصطناعي وهندسة الوكلاء الحديثة" : ""}.
+        يضم الكورس ${flat.length} درسًا موزّعة على ${STAGES_F[COURSE.stages.length] || COURSE.stages.length} مراحل، ولكل درس شرح مرئي وتشبيه وأمثلة عملية واختبار سريع. لنبدأ!`)],
       data: {
         stages: COURSE.stages.map(s => ({ id: s.id, t: s.t, acc: s.acc, n: s.modules.reduce((a, m) => a + m.lessons.length, 0) })),
         lessons: flat.length
@@ -72,7 +74,7 @@ function buildScript(course, opts) {
         kind: "stageCard", name: ["Stage", "مرحلة جديدة"], minDur: 9,
         clips: [clip(`${spokenOrdinals(stageTitleAr(st))}. ${endDot(st.d[1])} تضم هذه المرحلة ${lessonCount(nStage)}.`)],
         data: {
-          id: st.id, no: si, t: [st.t[0], stageTitleAr(st)], d: st.d, n: nStage,
+          id: st.id, no: si, t: [st.t[0], stageTitleAr(st)], d: st.d, n: nStage, total: COURSE.stages.filter(s => s.id !== "C").length,
           modules: st.modules.map(m => ({ id: m.id, t: [clean(m.t[0]), moduleTitleAr(m, st)], n: m.lessons.length }))
         }
       }]
@@ -178,7 +180,7 @@ function buildScript(course, opts) {
     title: ["Course complete", "نهاية الكورس"],
     chapters: [{
       kind: "courseOutro", name: ["Congratulations", "مبروك"], minDur: 10,
-      clips: [clip(`مبروك! أنهيت كورس مهندس الذكاء الاصطناعي بالكامل: ${flat.length} درسًا من المفاهيم الأساسية حتى النشر في بيئة الإنتاج.
+      clips: [clip(`مبروك! أنهيت كورس مهندس الذكاء الاصطناعي بالكامل: ${flat.length} درسًا من المفاهيم الأساسية حتى بناء الوكلاء ونشرها في بيئة الإنتاج.
         راجع الدروس التي تحتاجها، وطبّق المشروع الختامي بنفسك، ثم اختبر مستواك في الاختبار النهائي على المنصة. بالتوفيق، وإلى اللقاء!`)],
       data: { lessons: flat.length }
     }]

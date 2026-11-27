@@ -10,6 +10,7 @@
 //   node build.js all                     everything above in order
 //
 // Options: --voice ar-SA-HamedNeural  --rate +10%  --encoder x264|nvenc  --crf 20  --scale 2
+//          render: --no-reuse (re-render instead of verifying unchanged segments)  --min-battery 30 (0 = never pause)
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
@@ -38,6 +39,9 @@ const O = {
   quality: +opt("quality", 92)
 };
 fs.mkdirSync(OUT, { recursive: true });
+const hash = x => require("crypto").createHash("sha1").update(JSON.stringify(x)).digest("hex").slice(0, 12);
+// Timing tag: the plan without its music offset (that only affects the audio mix).
+const ptagOf = p => { const { musicOffset, ...rest } = p; return hash(rest); };
 const readJson = f => JSON.parse(fs.readFileSync(f, "utf8"));
 const writeJson = (f, d) => fs.writeFileSync(f, JSON.stringify(d, null, 1));
 const hms = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0"); };
@@ -123,52 +127,128 @@ async function cmdStills() {
 
 // ---------------------------------------------------------------- render
 async function cmdRender() {
-  const { launch, openPage, renderVideo } = require("./lib/render");
+  const R = require("./lib/render");
   const { mixSegment, MASTER_AF } = require("./lib/audio");
+  const { compareSegment } = require("./lib/verify");
+  const power = require("./lib/power");
   fs.mkdirSync(SEG, { recursive: true });
   const plans = select(loadPlans(), opt("only"));
-  const sig = p => require("crypto").createHash("sha1").update(JSON.stringify([p, O.fps, O.scale, O.crf, O.encoder,
-    ...["page/arscenes.js", "page/stage.js", "page/render.html", "../scenes.js", "../motion.js", "lib/audio.js", "lib/render.js"].map(f => fs.readFileSync(path.join(__dirname, f), "utf8"))])).digest("hex").slice(0, 12);
-  const todo = plans.filter(p => {
-    const meta = path.join(SEG, p.id + ".json");
-    return !(fs.existsSync(path.join(SEG, p.id + ".mp4")) && fs.existsSync(meta) && readJson(meta).sig === sig(p));
-  });
-  const totalSec = todo.reduce((a, p) => a + p.total, 0);
-  console.log(`render: ${todo.length}/${plans.length} segments to render (${hms(totalSec)} of video) with ${O.workers} workers`);
-  if (!todo.length) return;
-  const t0 = Date.now();
-  let doneSec = 0;
-  const queue = [...todo].sort((a, b) => b.total - a.total); // longest first
-  const worker = async w => {
-    const browser = await launch(O.scale);
-    let ctx = await openPage(browser, O.scale);
-    try {
-      while (queue.length) {
-        const p = queue.shift();
-        const s0 = Date.now();
-        const vid = path.join(SEG, p.id + ".video.mp4"), wav = path.join(SEG, p.id + ".wav"), mp4 = path.join(SEG, p.id + ".mp4");
-        let frames;
-        try {
-          frames = await renderVideo(ctx, p, vid, O);
-        } catch (e) {
-          console.error(`  [w${w}] ${p.id} failed once, retrying: ${e.message.split("\n")[0]}`);
-          try { await ctx.page.close(); } catch (_) { }
-          ctx = await openPage(browser, O.scale);
-          frames = await renderVideo(ctx, p, vid, O);
-        }
-        await mixSegment(p, TTS, wav, frames, O.fps);
-        await run(FFMPEG, ["-y", "-v", "error", "-i", vid, "-i", wav, "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-af", MASTER_AF, "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", mp4]);
-        fs.unlinkSync(vid); fs.unlinkSync(wav);
-        fs.writeFileSync(path.join(SEG, p.id + ".srt"), toSrt(segmentCues(p, TTS)));
-        writeJson(path.join(SEG, p.id + ".json"), { id: p.id, frames, fps: O.fps, duration: frames / O.fps, sig: sig(p) });
-        doneSec += p.total;
-        const el = (Date.now() - t0) / 1000, eta = el / doneSec * (totalSec - doneSec);
-        console.log(`  [w${w}] ${p.id}  ${hms(p.total)} video in ${hms((Date.now() - s0) / 1000)}  |  ${(doneSec / totalSec * 100).toFixed(1)}%  elapsed ${hms(el)}  eta ${hms(eta)}`);
-      }
-    } finally { await browser.close(); }
+  const reuse = !args.includes("--no-reuse"), minBattery = +opt("min-battery", 30);
+
+  // Three signatures per segment, from inputs read once now (the workers load the page now too):
+  //   ptag = timing (plan minus music offset) · vsig = everything the pixels depend on · asig = the sound.
+  // vsig includes the lesson's own data + enrichment, so editing one lesson re-renders only that lesson.
+  const read = files => files.map(f => fs.readFileSync(path.join(__dirname, f), "utf8"));
+  const VFILES = read(["page/arscenes.js", "page/stage.js", "page/render.html", "../scenes.js", "../motion.js", "lib/render.js"]);
+  const AFILES = read(["lib/audio.js"]);
+  const course = loadCourse(), byId = Object.fromEntries(course.flat.map(l => [l.id, l]));
+  const content = p => {
+    const l = p.kind === "lesson" && byId[p.lesson];
+    if (!l) return null; // cards draw only from their plan data
+    const { stage, module, next, index, ...own } = l;
+    let enr; try { enr = course.enrich(l); } catch (e) { enr = String(e); }
+    return [own, enr, stage.id, stage.t, module.id, module.t];
   };
-  await Promise.all(Array.from({ length: Math.min(O.workers, todo.length) }, (_, i) => worker(i + 1)));
-  console.log(`render: done in ${hms((Date.now() - t0) / 1000)}`);
+  const sigs = new Map(plans.map(p => {
+    const ptag = ptagOf(p);
+    return [p.id, { ptag, vsig: hash([ptag, content(p), O.fps, O.scale, O.crf, O.encoder, O.quality, VFILES]), asig: hash([ptag, p.musicOffset, AFILES]) }];
+  }));
+  const mp4Of = p => path.join(SEG, p.id + ".mp4");
+  const metaOf = p => { try { return readJson(path.join(SEG, p.id + ".json")); } catch (_) { return null; } };
+
+  // Leftovers of an interrupted run (encoder temp files, unmixed tracks).
+  for (const f of fs.readdirSync(SEG)) if (/\.part\.mp4$|\.video\.mp4$|\.wav$/.test(f)) try { fs.unlinkSync(path.join(SEG, f)); } catch (_) { }
+
+  const audioQ = [], checkQ = [], renderQ = [];
+  let upToDate = 0;
+  for (const p of plans) {
+    const m = metaOf(p), s = sigs.get(p.id);
+    if (!m || !fs.existsSync(mp4Of(p))) renderQ.push(p);
+    else if (m.vsig === s.vsig) m.asig === s.asig ? upToDate++ : audioQ.push(p);
+    else if (reuse && m.ptag === s.ptag) checkQ.push(p);
+    else renderQ.push(p);
+  }
+  const byLen = (a, b) => b.total - a.total; // longest first
+  renderQ.sort(byLen);
+  let totalSec = renderQ.reduce((a, p) => a + p.total, 0);
+  console.log(`render: ${plans.length} segments: ${upToDate} up to date, ${audioQ.length} audio-only, ${checkQ.length} to verify against the current page, ` +
+    `${renderQ.length} to render (${hms(totalSec)} of video) with ${O.workers} workers`);
+  if (!audioQ.length && !checkQ.length && !renderQ.length) return;
+
+  if (minBattery > 0) power.watchPower();
+  const gate = power.powerGate(minBattery, console.log);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  // Mix the audio, mux it with `videoSrc` (a fresh video track or the existing mp4), write subtitles + sidecar.
+  const finish = async (p, videoSrc, frames) => {
+    const wav = path.join(SEG, p.id + ".wav"), tmp = path.join(SEG, p.id + ".mux.part.mp4");
+    await mixSegment(p, TTS, wav, frames, O.fps);
+    await run(FFMPEG, ["-y", "-v", "error", "-i", videoSrc, "-i", wav, "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-af", MASTER_AF, "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", tmp]);
+    await R.renameRetry(tmp, mp4Of(p));
+    fs.unlinkSync(wav);
+    fs.writeFileSync(path.join(SEG, p.id + ".srt"), toSrt(segmentCues(p, TTS)));
+    writeJson(path.join(SEG, p.id + ".json"), { id: p.id, frames, fps: O.fps, duration: frames / O.fps, ...sigs.get(p.id) });
+  };
+
+  const t0 = Date.now(), failed = [], stats = { rendered: 0, kept: 0, remixed: 0 };
+  let doneSec = 0;
+  const next = () => audioQ.length ? ["audio", audioQ.shift()] : checkQ.length ? ["check", checkQ.shift()] : renderQ.length ? ["render", renderQ.shift()] : null;
+  const worker = async w => {
+    let browser = null, ctx = null;
+    const restart = async () => {
+      if (browser) await R.closeBrowser(browser);
+      browser = ctx = null;
+      browser = await R.launch(O.scale);
+      ctx = await R.openPage(browser, O.scale);
+    };
+    try {
+      for (let job; (job = next());) {
+        const [kind, p] = job, s0 = Date.now();
+        for (let attempt = 1; ; attempt++) {
+          try {
+            if (kind !== "audio" && !ctx) await restart();
+            if (kind === "audio") {
+              await finish(p, mp4Of(p), metaOf(p).frames);
+              stats.remixed++;
+              console.log(`  [w${w}] ${p.id}  audio remixed`);
+            } else if (kind === "check") {
+              const r = await compareSegment(ctx, p, mp4Of(p), O);
+              if (r.ok) {
+                await finish(p, mp4Of(p), metaOf(p).frames);
+                stats.kept++;
+                console.log(`  [w${w}] ${p.id}  unchanged (max block diff ${r.worst} over ${r.samples} frames) - kept`);
+              } else {
+                renderQ.push(p); renderQ.sort(byLen); totalSec += p.total;
+                console.log(`  [w${w}] ${p.id}  changed (block diff ${r.worst} at ${r.at}s${r.why ? ", " + r.why : ""}) - queued for render`);
+              }
+            } else {
+              const vid = path.join(SEG, p.id + ".video.mp4");
+              const frames = await R.renderVideo(ctx, p, vid, O, { beforeFrame: gate });
+              await finish(p, vid, frames);
+              fs.unlinkSync(vid);
+              stats.rendered++;
+              doneSec += p.total;
+              const el = (Date.now() - t0) / 1000, eta = el / doneSec * (totalSec - doneSec);
+              console.log(`  [w${w}] ${p.id}  ${hms(p.total)} video in ${hms((Date.now() - s0) / 1000)}  |  ${(doneSec / totalSec * 100).toFixed(1)}%  elapsed ${hms(el)}  eta ${hms(eta)}`);
+            }
+            break;
+          } catch (e) {
+            const msg = e.message.split("\n")[0];
+            if (attempt >= 5) { failed.push(p.id); console.error(`  [w${w}] ${p.id} FAILED after ${attempt} attempts: ${msg}`); break; }
+            console.error(`  [w${w}] ${p.id} attempt ${attempt} failed (${msg}) - restarting the browser and retrying`);
+            await gate(); // a sleep on battery shows up as a timeout: wait for power before retrying
+            await sleep([5, 20, 60, 120][attempt - 1] * 1000); // also rides out a brief network loss (web fonts)
+            if (kind !== "audio") { try { await restart(); } catch (e2) { console.error(`  [w${w}] browser restart failed: ${e2.message.split("\n")[0]}`); } }
+          }
+        }
+      }
+    } finally { if (browser) await R.closeBrowser(browser); }
+  };
+  try {
+    await Promise.all(Array.from({ length: Math.max(1, Math.min(O.workers, audioQ.length + checkQ.length + renderQ.length)) }, (_, i) => worker(i + 1)));
+  } finally { power.stopPower(); }
+  console.log(`render: done in ${hms((Date.now() - t0) / 1000)} - ${stats.rendered} rendered, ${stats.kept} kept after verification, ${stats.remixed} audio remixed`);
+  if (failed.length) throw new Error(`${failed.length} segments failed: ${failed.join(", ")} - run the same command again to retry them`);
 }
 
 // ---------------------------------------------------------------- assemble
@@ -207,8 +287,12 @@ async function concatTo(list, outFile, title) {
   console.log(`  ${path.basename(outFile)}  ${hms(t)}  (${chapters.length} chapters)`);
 }
 
-// A segment is finished once its .json sidecar exists (written after the mp4 is complete).
-const isDone = p => fs.existsSync(path.join(SEG, p.id + ".json")) && fs.existsSync(path.join(SEG, p.id + ".mp4"));
+// A segment is finished once its .json sidecar exists (written after the mp4 is complete) and was
+// rendered with the current timing — otherwise subtitles and chapters would drift.
+const isDone = p => {
+  const f = path.join(SEG, p.id + ".json");
+  return fs.existsSync(f) && fs.existsSync(path.join(SEG, p.id + ".mp4")) && readJson(f).ptag === ptagOf(p);
+};
 
 async function cmdAssemble() {
   const all = loadPlans();
@@ -241,6 +325,6 @@ async function cmdAssemble() {
     else if (cmd === "render") await cmdRender();
     else if (cmd === "assemble") await cmdAssemble();
     else if (cmd === "all") { cmdScript(); await cmdTts(); await cmdPlan(); await cmdRender(); await cmdAssemble(); }
-    else console.log(fs.readFileSync(__filename, "utf8").split("\n").slice(1, 13).map(l => l.replace(/^\/\/ ?/, "")).join("\n"));
+    else console.log(fs.readFileSync(__filename, "utf8").split("\n").slice(1, 14).map(l => l.replace(/^\/\/ ?/, "")).join("\n"));
   } catch (e) { console.error(e.stack || e.message); process.exit(1); }
 })();

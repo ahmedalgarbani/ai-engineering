@@ -62,11 +62,25 @@ async function grab(ctx, t, format, quality) {
   return Buffer.from(data, "base64");
 }
 
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Windows can hold a just-closed file briefly (indexer/antivirus): retry the rename.
+async function renameRetry(from, to) {
+  for (let i = 0; ; i++) {
+    try { return fs.renameSync(from, to); } catch (e) {
+      if (i >= 20 || !["EBUSY", "EPERM", "EACCES"].includes(e.code)) throw e;
+      await sleep(500);
+    }
+  }
+}
+
 // Render one segment's video track (no audio) → outMp4. Returns frame count.
-async function renderVideo(ctx, plan, outMp4, o, onProgress) {
+// hooks.beforeFrame(f, frames) is awaited every 60 frames (used to pause on low battery).
+// On any failure the encoder is killed and its temp file removed, so a retry starts clean.
+async function renderVideo(ctx, plan, outMp4, o, hooks = {}) {
   await prepare(ctx, plan);
   const frames = Math.round(plan.total * o.fps);
-  const tmp = outMp4 + ".part.mp4";
+  const tmp = `${outMp4}.${process.pid}-${Date.now().toString(36)}.part.mp4`;
   const enc = o.encoder === "nvenc"
     ? ["-c:v", "h264_nvenc", "-preset", "p5", "-rc", "vbr", "-cq", "21", "-b:v", "0"]
     : ["-c:v", "libx264", "-preset", o.preset || "veryfast", "-crf", String(o.crf || 20), "-tune", "animation", "-threads", String(o.threads || 3)];
@@ -74,16 +88,33 @@ async function renderVideo(ctx, plan, outMp4, o, onProgress) {
     ...enc, "-pix_fmt", "yuv420p", "-r", String(o.fps), "-g", String(o.fps * 2), "-movflags", "+faststart", tmp], { windowsHide: true });
   let err = "";
   ff.stderr.on("data", d => { err += d; });
-  const done = new Promise((res, rej) => ff.on("close", c => c === 0 ? res() : rej(new Error("ffmpeg failed: " + err.slice(-2000)))));
-  for (let f = 0; f < frames; f++) {
-    const buf = await grab(ctx, f / o.fps, "jpeg", o.quality || 92);
-    if (!ff.stdin.write(buf)) await once(ff.stdin, "drain");
-    if (onProgress && f % 150 === 0) onProgress(f, frames);
+  ff.stdin.on("error", () => { }); // EPIPE if ffmpeg dies — reported through its exit code
+  const closed = new Promise(res => ff.on("close", res));
+  try {
+    for (let f = 0; f < frames; f++) {
+      if (hooks.beforeFrame && f % 60 === 0) await hooks.beforeFrame(f, frames);
+      const buf = await grab(ctx, f / o.fps, "jpeg", o.quality || 92);
+      if (!ff.stdin.write(buf)) await Promise.race([once(ff.stdin, "drain"), closed]);
+      if (ff.exitCode != null) break;
+    }
+    ff.stdin.end();
+    const code = await closed;
+    if (code !== 0) throw new Error("ffmpeg failed: " + err.slice(-2000));
+    await renameRetry(tmp, outMp4);
+    return frames;
+  } catch (e) {
+    ff.kill();
+    await closed;
+    try { fs.unlinkSync(tmp); } catch (_) { }
+    throw e;
   }
-  ff.stdin.end();
-  await done;
-  fs.renameSync(tmp, outMp4);
-  return frames;
+}
+
+// Close a browser that may be wedged (e.g. after the machine slept mid-capture).
+async function closeBrowser(browser) {
+  const proc = browser.process && browser.process();
+  await Promise.race([browser.close().catch(() => { }), sleep(10000)]);
+  if (proc && proc.exitCode == null) try { proc.kill("SIGKILL"); } catch (_) { }
 }
 
 async function stills(ctx, plan, dir, times) {
@@ -98,4 +129,4 @@ async function stills(ctx, plan, dir, times) {
   return out;
 }
 
-module.exports = { launch, openPage, renderVideo, stills };
+module.exports = { launch, openPage, prepare, grab, renderVideo, closeBrowser, renameRetry, stills };

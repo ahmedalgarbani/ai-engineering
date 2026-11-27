@@ -61,15 +61,35 @@
   // COURSE INTRO
   function courseIntro(c) {
     const acc = "#f5a524", d = c.data;
-    let s = `<g transform="translate(480,138)">
+    // More than six stages → two rows of stage cards; the header moves up to make room.
+    const n = d.stages.length, two = n > 6, dy = two ? -24 : 0;
+    let s = `<g transform="translate(480,${138 + dy})">
       <circle r="78" fill="none" stroke="${acc}" stroke-width="1.5" stroke-dasharray="6 9" opacity=".5"><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="24s" repeatCount="indefinite"/></circle>
       <circle r="64" fill="none" stroke="#3db4f2" stroke-width="2" stroke-dasharray="40 14" opacity=".55"><animateTransform attributeName="transform" type="rotate" from="360" to="0" dur="16s" repeatCount="indefinite"/></circle>
       <g opacity="0">${ap(0.2, 0, 0.8)}<circle r="48" fill="${acc}"/><text y="14" text-anchor="middle" font-family="${FD}" font-size="40" font-weight="800" fill="${INK}">AI</text></g>
     </g>`;
-    s += `<g opacity="0">${ap(0.7, 14)}${arC(480, 268, "كورس مهندس الذكاء الاصطناعي", 46, 700, "#fff")}</g>`;
-    s += `<g opacity="0">${ap(1.2, 10)}${enT(480, 304, "AI ENGINEER COURSE  ·  الشرح الكامل باللغة العربية", 18, 600, "#9fb2c6", "middle", FA, 'letter-spacing="1"')}</g>`;
-    s += `<rect x="480" y="320" width="0" height="4" rx="2" fill="${acc}"><animate attributeName="x" to="380" begin="1.4s" dur=".7s" fill="freeze"/>${grow("width", 200, 1.4, 0.7)}</rect>`;
-    const n = d.stages.length, cw = 128, gap = 12, x0 = 480 + (n * cw + (n - 1) * gap) / 2;
+    s += `<g opacity="0">${ap(0.7, 14)}${arC(480, 268 + dy, "كورس مهندس الذكاء الاصطناعي", 46, 700, "#fff")}</g>`;
+    s += `<g opacity="0">${ap(1.2, 10)}${enT(480, 304 + dy, "AI ENGINEER COURSE  ·  الشرح الكامل باللغة العربية", 18, 600, "#9fb2c6", "middle", FA, 'letter-spacing="1"')}</g>`;
+    s += `<rect x="480" y="${320 + dy}" width="0" height="4" rx="2" fill="${acc}"><animate attributeName="x" to="380" begin="1.4s" dur=".7s" fill="freeze"/>${grow("width", 200, 1.4, 0.7)}</rect>`;
+    if (two) {
+      const per = Math.ceil(n / 2), cw = 168, gap = 12, ch = 78;
+      d.stages.forEach((st, i) => {
+        const r = i < per ? 0 : 1, j = r ? i - per : i, k = r ? n - per : per;
+        const x = 480 + (k * cw + (k - 1) * gap) / 2 - (j + 1) * cw - j * gap, y = 316 + r * (ch + 8), at = 2.0 + i * 0.3;
+        const label = st.id === "C" ? "تمهيدي" : "المرحلة " + st.id.replace("S", "");
+        const t = fitW(stripStage(st.t[1]), cw - 24, 2, 14, 11, 600);
+        s += `<g opacity="0">${ap(at, 18)}
+          <rect x="${x}" y="${y}" width="${cw}" height="${ch}" rx="14" fill="#101f33" stroke="${st.acc}" stroke-opacity=".7" stroke-width="1.6"/>
+          <rect x="${x + 14}" y="${y}" width="${cw - 28}" height="4" rx="2" fill="${st.acc}"/>
+          ${arT(x + cw - 12, y + 23, label, 13, 700, st.acc)}
+          ${arT(x + 12, y + 23, st.n + " درسًا", 12, 500, "#9fb2c6", "", "end")}
+          ${t.lines.map((ln, q) => arT(x + cw - 12, y + 45 + q * (t.sz + 4), ln, t.sz, 600, "#e2e8f0")).join("")}
+        </g>`;
+      });
+      s += `<g opacity="0">${ap(Math.max(4.4, 2.3 + n * 0.3), 10)}${arC(480, 516, `${d.lessons} درسًا  ·  ${n} مراحل  ·  شرح مرئي وتشبيهات وأمثلة عملية واختبارات`, 16, 600, "#cbd5e1")}</g>`;
+      return svgw(acc, s);
+    }
+    const cw = 128, gap = 12, x0 = 480 + (n * cw + (n - 1) * gap) / 2;
     d.stages.forEach((st, i) => {
       const x = x0 - (i + 1) * cw - i * gap, y = 352, at = 2.0 + i * 0.32;
       const label = st.id === "C" ? "تمهيدي" : "المرحلة " + st.id.replace("S", "");
@@ -92,7 +112,7 @@
     const d = c.data;
     const mark = d.id === "C" ? "C" : d.id.replace("S", "");
     let s = `<text x="44" y="520" font-family="${FD}" font-weight="800" font-size="300" fill="none" stroke="${acc}" stroke-width="2" opacity="0">${esc(mark)}${grow("opacity", 0.16, 0.2, 1)}</text>`;
-    s += pill(900, 64, d.id === "C" ? "المرحلة التمهيدية" : `المرحلة ${mark} من 5`, acc);
+    s += pill(900, 64, d.id === "C" ? "المرحلة التمهيدية" : `المرحلة ${mark} من ${d.total || 5}`, acc);
     const t = fitW(stripStage(d.t[1]), 420, 3, 38, 26, 700);
     let y = 150;
     t.lines.forEach((ln, k) => { s += `<g opacity="0">${ap(0.45 + k * 0.2, 14)}${arT(900, y, ln, t.sz, 700, "#fff")}</g>`; y += t.sz * 1.3; });
@@ -447,7 +467,7 @@
       <polygon points="0,-30 8.8,-12 28.5,-9.3 14.3,4.6 17.6,24.3 0,15 -17.6,24.3 -14.3,4.6 -28.5,-9.3 -8.8,-12" fill="#f5a524"/>
     </g>`;
     s += `<g opacity="0">${ap(0.8, 14)}${arC(480, 278, "مبروك! أتممت الكورس", 48, 700, "#fff")}</g>`;
-    s += `<g opacity="0">${ap(1.3, 10)}${arC(480, 318, `${c.data.lessons} درسًا من المفاهيم الأساسية حتى النشر في بيئة الإنتاج`, 19, 500, "#cbd5e1")}</g>`;
+    s += `<g opacity="0">${ap(1.3, 10)}${arC(480, 318, `${c.data.lessons} درسًا من المفاهيم الأساسية حتى بناء الوكلاء ونشرها في بيئة الإنتاج`, 19, 500, "#cbd5e1")}</g>`;
     const cta = ["راجع الدروس التي تحتاجها", "طبّق المشروع الختامي", "خذ الاختبار النهائي"];
     cta.forEach((t, i) => {
       const w = 250, x = 480 + 1.5 * w + 15 - (i + 1) * w - i * 15, at = 2.2 + i * 0.4;
