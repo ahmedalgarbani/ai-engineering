@@ -1779,7 +1779,7 @@
     { say: "وتستمر الحلقة حتى يتوقف النموذج عن طلب الأدوات، مع سقف أقصى للخطوات يحميك دائمًا.", eq: "@T{steps} @le @T{MAX@_STEPS}", do: s => {
       s.ring("lp", { x: 800, y: 530, r: 132, color: "gold", w: 3, arrows: 3 }, { at: "14%" });
       s.to("lp", { spin: 360 }, { at: "22%", dur: 2.8, ease: "lin" });
-      s.badge("cap", { text: "MAX_STEPS = 5", x: 800, y: 345, color: "gold", size: 20 }, { at: "48%" });
+      s.badge("cap", { text: "MAX_STEPS = 5", x: 800, y: 710, color: "gold", size: 20 }, { at: "48%" });
     }},
     { sec: "الكود والتسجيل", say: "وهذا كود وكيلك الأول كاملًا: أداة، حلقة محدودة، تنفيذ، وتسجيل لكل خطوة.", do: s => {
       s.clear({ dur: 0.4 });
@@ -1901,7 +1901,7 @@
     }},
     { say: "التقييمات هي الحَكَم: إذا حقق Workflow دقة 94% فلا مبرر لتحويله إلى Agent.", do: s => {
       s.out("mx", { at: "0%", dur: 0.3 });
-      s.to("ld*", { y: 350, scale: 0.84 }, { at: "8%", dur: 0.6 });
+      s.to(["ld0", "ld1", "ld2"], { y: 350, scale: 0.84 }, { at: "8%", dur: 0.6 });
       s.bars("ev", [["Single prompt", 0.71, "orange", "71%"], ["Workflow (chosen!)", 0.94, "green", "94% · fast"], ["Full Agent", 0.95, "purple", "95% · 6× cost"]], { x: 640, y: 655, w: 500, gap: 72, size: 25, h: 28 }, { at: "28%" });
       s.pulse("ev1", { at: "72%", color: "green" });
     }},

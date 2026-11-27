@@ -56,7 +56,7 @@
     }},
     { say: "تخيّل الإكمال التلقائي مفكًا كهربائيًا، بينما الوكيل المستقل فريق مطورين ينتظر مخططك ومراجعتك.", do: s => {
       s.out("lev", { at: "0%", dur: 0.25 });
-      s.to(["role*", "role_*"], { y: v => v - 70, scale: 0.82 }, { at: "5%", dur: 0.6 });
+      s.to(["role0", "role1", "role2"], { y: v => v - 70, scale: 0.82 }, { at: "5%", dur: 0.6 });
       s.box("an1", { x: 470, y: 635, w: 460, h: 170, label: "Tab Autocomplete", sub: "power screwdriver · faster typing", icon: "tool", color: "blue", size: 25 }, { at: "25%" });
       s.box("an2", { x: 1130, y: 635, w: 480, h: 170, label: "Autonomous Agent", sub: "junior crew · needs blueprint & PR review", icon: "users", color: "purple", size: 25 }, { at: "50%" });
       s.link("anl", "an1", "an2", { color: "gold", label: "leverage shift", pulse: true }, { at: "72%" });
@@ -134,7 +134,7 @@
       s.clear({ at: "0%", dur: 0.35 });
       s.curve("rc", { x: 760, y: 530, w: 720, h: 350, color: "red", xlabel: "context window fullness (%)", ylabel: "accuracy", pts: [[0, 0.94], [0.25, 0.93], [0.5, 0.89], [0.68, 0.78], [0.82, 0.52], [1, 0.28]] }, { at: "12%", dur: 1.4 });
       s.line("cap", { x1: 888, y1: 355, x2: 888, y2: 705, color: "gold", dash: "8 6", w: 3 }, { at: "52%" });
-      s.callout("capl", { x: 1170, y: 400, label: "65–70% → compact or reset!", icon: "alert", color: "gold", size: 21 }, { at: "64%" });
+      s.callout("capl", { x: 1340, y: 400, label: "65–70% → compact or reset!", icon: "alert", color: "gold", size: 21 }, { at: "64%" });
     }},
     { sec: "طاولة العمل", say: "تخيّل السياق كطاولة عمل: لا تضع عليها كل الورشة، بل فقط المخططات والقطع اللازمة للعطل الحالي.", do: s => {
       s.out(["rc", "cap", "capl"], { at: "0%", dur: 0.35 });
@@ -187,7 +187,7 @@
       s.stream("ho", "s2", { at: "70%", color: "green" });
     }},
     { say: "ملف التسليم HANDOFF.md ينقل القرارات المؤكدة والخطوة التالية فقط، ويترك كل المحاولات الفاشلة خلفه.", eq: "@T{/compact} @; @T{or} @; @Y{HANDOFF.md}", do: s => {
-      s.to(["s1", "ho", "s2", "hl1", "hl2"], { y: v => v - 140, scale: 0.8 }, { at: "0%", dur: 0.6 });
+      s.to(["s1", "ho", "s2"], { y: v => v - 140, scale: 0.8 }, { at: "0%", dur: 0.6 });
       s.code("hf", { x: 800, y: 675, size: 22, plain: true, title: "HANDOFF.md (10 lines)", lines: [
         "Decided: use integer cents in src/lib/tax.ts",
         "Done: /checkout 500 fixed + unit tests passing",
@@ -348,7 +348,7 @@
     }},
     { say: "اطلب إعادة إنتاج الخطأ باختبار فاشل أولًا، ثم الإصلاح حتى ينجح، لتتأكد أنك عالجت الخلل الحقيقي.", do: s => {
       s.out("rc", { at: "0%", dur: 0.25 });
-      s.to(["st*", "st_*"], { y: v => v - 190, scale: 0.85 }, { at: "5%", dur: 0.55 });
+      s.to(["st0", "st1", "st2", "st3"], { y: v => v - 190, scale: 0.85 }, { at: "5%", dur: 0.55 });
       s.chain("td", ["1 · Failing Unit Test", "2 · Fix pricing.ts", "3 · Tests Green ✓"], { y: 650, gap: 96, colors: ["red", "blue", "green"], icons: ["x", "tool", "check"], w: 300, h: 135, size: 23, pulse: true }, { at: "28%", st: 0.26 });
       s.stream("td0", "td2", { at: "62%", color: "green", every: 0.45 });
     }},
@@ -693,7 +693,7 @@
     { say: "عند المطابقة يفتح المستوى الثاني: يقرأ الوكيل تعليمات SKILL.md الكاملة لهذه المهارة وحدها.", eq: "@T{Level 2}: @Y{SKILL.md body} @; (@T{loaded on match})", do: s => {
       s.unfocus({ at: "0%", dur: 0.35 });
       s.out(["sk0", "sk2", "sk3", "tk", "tsk"], { at: "5%", dur: 0.35 });
-      s.to("sk1", { x: 800, y: 285, w: 720, stroke: "gold" }, { at: "14%", dur: 0.6 });
+      s.to("sk1", { x: 800, y: 285, w: 820, stroke: "gold" }, { at: "14%", dur: 0.6 });
       s.code("md", { x: 640, y: 585, size: 21, plain: true, title: "db-migration/SKILL.md (Level 2)", lines: [
         "1. Check db/migrations/ for latest sequence number",
         "2. Write BOTH UP and DOWN SQL statements",
@@ -1022,7 +1022,7 @@
       });
     }},
     { say: "الأوامر بسيطة جدًا: أنشئ Worktree لكل ميزة، شغّل وكيلًا في كل طرفية، ثم احذف المجلد بعد الدمج.", do: s => {
-      s.to(["rp", "w*", "wl*"], { y: v => v - 120, scale: 0.72 }, { at: "0%", dur: 0.55 });
+      s.to(["rp", "w0", "w1", "w2"], { y: v => v - 95, scale: 0.72 }, { at: "0%", dur: 0.55 });
       s.code("wt", { x: 800, y: 705, size: 20, plain: true, title: "Parallel Agents with Git Worktrees", lines: [
         "git worktree add ../app-payments feat/payments   # Terminal 1: Agent A",
         "git worktree add ../app-search   feat/search     # Terminal 2: Agent B",
@@ -1088,7 +1088,7 @@
     { say: "خوادم التوثيق الحي مثل Context7 تجلب أحدث توثيق رسمي لـ Next.js أو FastAPI أو Flutter، فتمنع أخطاء القدم.", do: s => {
       s.focus(["m3", "ag", "m_3"], { at: "0%", zoom: 1.12, color: "blue" });
       s.stream("m3", "ag", { at: "28%", color: "blue", every: 0.45 });
-      s.callout("c1", { x: 410, y: 745, label: "Context7 MCP → zero knowledge-cutoff API bugs", icon: "book", color: "blue", size: 20 }, { at: "52%" });
+      s.callout("c1", { x: 800, y: 785, label: "Context7 MCP → zero knowledge-cutoff API bugs", icon: "book", color: "blue", size: 20 }, { at: "52%" });
     }},
     { say: "وخادما GitHub وPostgres بصلاحية القراءة فقط يكشفان التذكرة والأعمدة والفهارس الفعلية بدل التخمين.", do: s => {
       s.out("c1", { at: "0%", dur: 0.25 });
@@ -1102,7 +1102,7 @@
       s.focus(["m2", "m4", "ag", "m_2", "m_4"], { at: "8%", zoom: 1.1, color: "teal" });
       s.stream("m2", "ag", { at: "28%", color: "pink", every: 0.5 });
       s.stream("ag", "m4", { at: "46%", color: "teal", every: 0.5 });
-      s.callout("c3", { x: 1180, y: 775, label: "Figma spacing → Playwright verifies console: 0 errors", icon: "browser", color: "teal", size: 20 }, { at: "62%" });
+      s.callout("c3", { x: 800, y: 255, label: "Figma spacing → Playwright verifies console: 0 errors", icon: "browser", color: "teal", size: 20 }, { at: "62%" });
     }},
     { sec: "إعداد mcp.json", say: "هكذا تربطها في ملف mcp.json لبيئة البرمجة: أسطر قصيرة لـ GitHub، وPostgres، والتوثيق الحي.", do: s => {
       s.clear({ at: "0%", dur: 0.35 });
@@ -1169,7 +1169,7 @@
     { say: "راقب المنحنى: كلما تضخّم عدد الأدوات المحقونة في السياق، هبطت دقة اختيار الأداة الصحيحة بوضوح.", do: s => {
       s.clear({ at: "0%", dur: 0.35 });
       s.curve("cv", { x: 760, y: 530, w: 720, h: 350, color: "orange", xlabel: "active MCP tools in prompt", ylabel: "tool selection accuracy", pts: [[0, 0.96], [0.2, 0.94], [0.45, 0.82], [0.7, 0.61], [1, 0.38]] }, { at: "12%", dur: 1.4 });
-      s.callout("z", { x: 560, y: 390, label: "Sweet spot: 2–5 lean servers", icon: "target", color: "green", size: 21 }, { at: "62%" });
+      s.callout("z", { x: 635, y: 405, label: "Sweet spot: 2–5 lean servers", icon: "target", color: "green", size: 21 }, { at: "62%" });
     }},
     { sec: "أقل صلاحية", say: "أمنيًا، التزم بمبدأ أقل صلاحية: اربط قاعدة البيانات بمستخدم قراءة فقط على التطوير، لا صلاحيات إنتاج أبدًا.", do: s => {
       s.out(["cv", "z"], { at: "0%", dur: 0.35 });
@@ -1380,7 +1380,7 @@
       s.stream("hb1", "hb2", { at: "68%", color: "gold" });
     }},
     { say: "احفظ هذا الدليل العملي لتوجيه المهام بين النماذج وميزانيات التفكير في يوم عملك.", do: s => {
-      s.to(["hb*", "hb_*"], { y: v => v - 165, scale: 0.74 }, { at: "0%", dur: 0.55 });
+      s.to(["hb0", "hb1", "hb2"], { y: v => v - 165, scale: 0.74 }, { at: "0%", dur: 0.55 });
       s.code("pb", { x: 800, y: 650, size: 21, plain: true, title: "Practical Model Routing Playbook", lines: [
         "[Architecture / Plan]    -> Frontier Reasoning (High Thinking)",
         "[Feature Implementation] -> Balanced Coding    (Med Thinking)",

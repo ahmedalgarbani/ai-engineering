@@ -282,7 +282,7 @@
       s.bars("ix", [["Exact scan · 5M", 0.92, "red", "1,200 ms"], ["HNSW index", 0.05, "green", "15 ms"]], { x: 1120, y: 545, w: 300, gap: 110, size: 24, h: 34 }, { at: "50%" });
     }},
     { say: "فأضِف فهرسًا تقريبيًا مثل HNSW ليبقى زمن البحث بضع ملّي ثوانٍ فقط.", do: s => {
-      s.code("ixc", { x: 800, y: 785, size: 22, title: "index.sql", lines: [
+      s.code("ixc", { x: 1140, y: 765, size: 17, title: "index.sql", lines: [
         "CREATE INDEX ON chunks USING hnsw (embedding vector_cosine_ops);"
       ] }, { at: "15%", dur: 1.2 });
       s.pulse("ix1", { at: "60%", color: "green" });
@@ -1197,9 +1197,6 @@
     }}
   ]);
 
-  // PART3_MARKER
-})();
-
   // ================================================================== 7.1 Agent loops & ReAct
   X.lesson("7.1", [
     { sec: "الوكيل في حلقة", say: "يسأل عميل: «طلبي 812A تأخّر، تحقّق من حالته واسترد الشحن إن تأخر».", do: s => {
@@ -1800,3 +1797,494 @@
       s.stream("sum0", "sum4", { color: "gold", at: "56%", span: 2.4, every: 0.5 });
     }}
   ]);
+
+  // ================================================================== A3.3 Checkpointer vs. Store
+  X.lesson("A3.3", [
+    { sec: "مشكلة الذاكرة", say: "تخيّل مستخدمًا يطلب «ردودًا مختصرة» في المحادثة الأولى، ثم يفتح محادثة جديدة غدًا.", do: s => {
+      s.bubble("b1", { text: "أفضّل الردود المختصرة", side: "u", x: 430, y: 310, w: 340, color: "blue" }, { at: "0%" });
+      s.box("t1", { x: 430, y: 510, w: 300, h: 95, label: "Thread #1", sub: "today · active", color: "blue", icon: "chat", size: 22 }, { at: "25%" });
+      s.box("t2", { x: 1170, y: 510, w: 300, h: 95, label: "Thread #2", sub: "tomorrow · blank?", color: "red", icon: "chat", size: 22 }, { at: "55%" });
+      s.callout("c1", { x: 1170, y: 710, label: "Why did it forget my preference?", color: "red", icon: "alert" }, { at: "78%" });
+    }},
+    { say: "إن حفظنا كل شيء في محادثة واحدة فستنمو بلا نهاية، وإن خلطنا المحادثات فستتصادم الحالات!", do: s => {
+      s.clear({ dur: 0.4 });
+      s.versus("vs", "Single Thread Only", "Global State Only", { colors: ["orange", "red"] }, { at: "0%" });
+      s.col("l1", ["Thread #2 starts from zero", "No cross-session preferences", "Context grows endlessly"], { x: 435, y: 560, w: 460, size: 23, icons: ["x", "x", "x"], colors: ["red", "red", "red"] }, { at: "25%", st: 0.15 });
+      s.col("r1", ["Threads overwrite each other", "No step-level crash recovery", "Broken HITL pause/resume"], { x: 1165, y: 560, w: 460, size: 23, icons: ["x", "x", "x"], colors: ["red", "red", "red"] }, { at: "55%", st: 0.15 });
+    }},
+    { sec: "Checkpointer: ذاكرة الجلسة", say: "يقدّم LangGraph نظامين: أولهما Checkpointer لحفظ حالة الرسم خطوة بخطوة لكل thread_id.", eq: "@T{Checkpointer}: (thread@_id, step) @to @B{State}_t", do: s => {
+      s.clear({ dur: 0.45 });
+      s.zone("z1", { x: 510, y: 455, w: 760, h: 320, label: "Thread #1 · thread_id = T1", color: "blue" }, { at: "0%" });
+      s.chain("g1", ["Input", "Agent", "Tool"], { x: 510, y: 435, gap: 60, h: 86, size: 21, colors: ["soft", "blue", "teal"], icons: ["chat", "brain", "wrench"], pulse: true }, { at: "18%", st: 0.12 });
+      s.box("cp", { x: 510, y: 740, w: 420, h: 92, label: "Checkpointer (Postgres)", sub: "saves every super-step", color: "blue", icon: "db", size: 22 }, { at: "45%" });
+      s.link("lcp", "g11", "cp", { color: "blue", pulse: true }, { at: "62%" });
+      s.stream("g11", "cp", { color: "blue", at: "70%", span: 2.0, every: 0.6 });
+    }},
+    { say: "بفضل Checkpointer، إذا تعطّلت أداة في المنتصف، يستأنف الرسم من آخر نقطة محفوظة فورًا.", do: s => {
+      s.focus(["g11", "g12", "cp", "lcp"], { zoom: 1.12, at: "8%" });
+      s.callout("rec", { x: 880, y: 740, label: "Fault tolerance & time-travel replay ✓", color: "green", icon: "check" }, { at: "45%" });
+      s.pulse("cp", { at: "68%", color: "green" });
+    }},
+    { say: "كما يمكّن Checkpointer إيقاف التنفيذ لموافقة بشرية (HITL)، ثم استئنافه من نفس اللحظة.", do: s => {
+      s.unfocus({ at: "0%", dur: 0.3 });
+      s.out("rec", { at: "5%", dur: 0.25 });
+      s.box("hitl", { x: 960, y: 435, w: 230, h: 86, label: "HITL Pause", sub: "resume later", color: "gold", icon: "shield", size: 20 }, { at: "25%" });
+      s.link("lht", "g12", "hitl", { color: "gold", pulse: true }, { at: "45%" });
+      s.pulse("cp", { at: "70%", color: "gold" });
+    }},
+    { sec: "Store: الذاكرة طويلة المدى", say: "أما Store فيحفظ الحقائق والتفضيلات الدائمة عبر كل المحادثات، مقسّمة بـ namespace.", eq: "@T{Store}: (namespace, key) @to @G{Durable Fact}", do: s => {
+      s.out(["hitl", "lht"], { at: "0%", dur: 0.3 });
+      s.box("st", { x: 1180, y: 740, w: 460, h: 92, label: "Store (Cross-Thread Memory)", sub: "namespace: (tenant, user_42)", color: "green", icon: "layers", size: 21 }, { at: "20%" });
+      s.box("t2b", { x: 1230, y: 435, w: 320, h: 92, label: "Thread #2 · thread_id = T2", sub: "reads user preferences ✓", color: "green", icon: "chat", size: 21 }, { at: "45%" });
+      s.link("lst1", "g11", "st", { color: "green", pulse: true }, { at: "60%" });
+      s.link("lst2", "st", "t2b", { color: "green", pulse: true }, { at: "72%" });
+    }},
+    { say: "عندما يتعلّم الوكيل تفضيلًا في المحادثة الأولى يكتبه في Store، فتقرأه المحادثة الثانية تلقائيًا.", do: s => {
+      s.focus(["st", "t2b", "lst1", "lst2"], { zoom: 1.12, at: "8%" });
+      s.stream("g11", "st", { color: "green", at: "25%", span: 1.8, every: 0.55 });
+      s.stream("st", "t2b", { color: "green", at: "52%", span: 1.8, every: 0.55 });
+    }},
+    { say: "وفي الإنتاج نجمع النظامين معًا: Checkpointer للجلسة الحالية، وStore للذاكرة الدائمة.", eq: "@T{Memory} = @B{Checkpointer}(thread) + @G{Store}(user)", do: s => {
+      s.unfocus({ at: "0%", dur: 0.3 });
+      s.pulse(["cp", "st"], { at: "35%", color: "gold" });
+      s.callout("both", { x: 800, y: 255, label: "Most production apps compile with BOTH Checkpointer & Store", color: "gold", icon: "sparkle" }, { at: "58%" });
+    }},
+    { sec: "الكود وفخّ الإنتاج", say: "في الكود نمرّر الاثنين عند بناء الرسم، ونخزّن التفضيل داخل namespace خاص بالعميل والمستخدم.", do: s => {
+      s.clear({ dur: 0.45 });
+      s.code("cd", { x: 800, y: 520, size: 19, title: "memory_setup.py", lines: [
+        "store.put((\"acme\", user_id), \"prefs\", {\"style\": \"concise\"})",
+        "",
+        "graph = builder.compile(",
+        "    checkpointer=PostgresSaver(pool),",
+        "    store=PostgresStore(pool)",
+        ")",
+        "graph.invoke(msg, config={\"configurable\": {\"thread_id\": \"T2\"}})"
+      ] }, { at: "0%", dur: 1.4 });
+      s.to("cd", { hl: 0, hc: "green" }, { at: "26%", dur: 0.2 });
+      s.to("cd", { hl: 3, hc: "blue" }, { at: "52%", dur: 0.2 });
+      s.to("cd", { hl: 4, hc: "green" }, { at: "74%", dur: 0.2 });
+    }},
+    { say: "احذر خلط namespaces بين العملاء، ولا تضع سجل المحادثة الكامل داخل Store فتتضخم الـ Tokens.", do: s => {
+      s.clear({ dur: 0.45 });
+      s.versus("vs2", "Common Mistakes", "Production Rule", { colors: ["red", "green"] }, { at: "0%" });
+      s.col("bd", ["Shared namespace without tenant_id", "Dumping raw chat logs into Store", "Using Store for step-level state"], { x: 435, y: 560, w: 480, size: 22, icons: ["x", "x", "x"], colors: ["red", "red", "red"] }, { at: "24%", st: 0.15 });
+      s.col("gd", ["Namespace by (tenant_id, user_id)", "Store concise facts & preferences", "Use Checkpointer for thread state"], { x: 1165, y: 560, w: 480, size: 22, icons: ["check", "check", "check"], colors: ["green", "green", "green"] }, { at: "52%", st: 0.15 });
+    }},
+    { say: "فصل الحقائق الدائمة عن سجل الجلسة يبقي الـ Prompt خفيفًا وسريعًا حتى بعد مئات الجلسات.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.bars("mem", [
+        ["Replaying 50 old threads in prompt", 0.90, "red", "28,000 tokens"],
+        ["Checkpointer + targeted Store keys", 0.14, "green", "1,400 tokens"]
+      ], { x: 650, y: 520, w: 540, gap: 110, size: 24, h: 34 }, { at: "12%" });
+    }},
+    { sec: "الخلاصة", say: "الخلاصة: Checkpointer يحفظ مسار الجلسة، وStore يحفظ ذاكرة المستخدم عبر كل الجلسات.", eq: "@B{Checkpointer} = @T{Session} @quad | @quad @G{Store} = @T{Cross-Thread}", do: s => {
+      s.clear({ dur: 0.45 });
+      s.chain("sum", ["Thread State", "Checkpointer", "User Facts", "Store (NS)", "Persistent Agent"], { y: 500, gap: 40, colors: ["soft", "blue", "soft", "green", "gold"], h: 96, size: 20, icons: ["chat", "db", "sparkle", "layers", "check"], pulse: true }, { at: "5%", st: 0.14 });
+      s.stream("sum0", "sum4", { color: "gold", at: "56%", span: 2.4, every: 0.5 });
+    }}
+  ]);
+
+  // ================================================================== A3.4 Interrupts in Practice
+  X.lesson("A3.4", [
+    { sec: "خطر التنفيذ المباشر", say: "تخيّل وكيلًا يستعد لتنفيذ أداة refund_order للطلب 812 بمبلغ 400 دولار تلقائيًا!", do: s => {
+      s.bubble("q", { text: "Refund order #812 ($400)", side: "u", x: 800, y: 290, w: 380, color: "blue" }, { at: "0%" });
+      s.box("ag", { x: 460, y: 510, w: 280, h: 96, label: "Agent", sub: "calls refund_order(812, 400)", color: "blue", icon: "brain", size: 21 }, { at: "28%" });
+      s.box("pay", { x: 1120, y: 510, w: 310, h: 96, label: "Payment API", sub: "-$400 sent immediately!", color: "red", icon: "alert", size: 21 }, { at: "55%" });
+      s.link("l1", "ag", "pay", { color: "red", pulse: true }, { at: "68%" });
+    }},
+    { say: "خطأ واحد في المعاملات أو هلوسة رقم إضافي قد يسبّب خسارة مالية فورية قبل تدخل أي إنسان.", do: s => {
+      s.mark("mk", "pay", "x", { at: "15%" });
+      s.callout("al", { x: 800, y: 730, label: "Never execute irreversible tools without a human gate!", color: "red", icon: "shield" }, { at: "45%" });
+    }},
+    { sec: "آلية interrupt() خطوة بخطوة", say: "الحل هو وضع interrupt() داخل الأداة الحساسة؛ فيتوقف التنفيذ فورًا وتحفظ الحالة في Checkpointer.", eq: "@T{interrupt}(payload) @to @Y{Pause} @to @B{Checkpointer}", do: s => {
+      s.clear({ dur: 0.45 });
+      s.chain("fl", ["Agent", "refund_tool", "interrupt()", "Checkpointer"], { y: 420, gap: 65, h: 90, size: 21, colors: ["blue", "orange", "gold", "teal"], icons: ["brain", "wrench", "shield", "db"], pulse: true }, { at: "5%", st: 0.14 });
+      s.stream("fl0", "fl3", { color: "gold", at: "58%", span: 2.0, every: 0.5 });
+    }},
+    { say: "انتبه: حمولة interrupt() يجب أن تكون قابلة للتحويل إلى JSON ليتمكن Checkpointer من تخزينها.", do: s => {
+      s.focus(["fl2", "fl3"], { zoom: 1.14, at: "8%" });
+      s.box("pl", { x: 960, y: 650, w: 560, h: 110, label: "{\"action\": \"refund\", \"id\": 812, \"usd\": 400}", sub: "JSON-serializable payload ✓", color: "gold", font: "mono", size: 18 }, { at: "32%" });
+      s.link("lpl", "fl2", "pl", { color: "gold", pulse: true }, { at: "50%" });
+    }},
+    { say: "تُعرض العملية المعلّقة بوضوح في الواجهة، ويختار الإنسان: موافقة، أو تعديل المبلغ، أو رفض.", do: s => {
+      s.unfocus({ at: "0%", dur: 0.3 });
+      s.out(["pl", "lpl"], { at: "0%", dur: 0.25 });
+      s.box("ui", { x: 460, y: 690, w: 310, h: 92, label: "Pending Action UI", sub: "Approve / Edit / Reject", color: "purple", icon: "chat", size: 21 }, { at: "20%" });
+      s.link("lui", "fl2", "ui", { color: "purple", pulse: true }, { at: "35%" });
+      s.col("opt", ["Approve → $400", "Edit → $25", "Reject → Cancel"], { x: 1120, y: 690, w: 340, size: 22, colors: ["green", "gold", "red"], icons: ["check", "wrench", "x"] }, { at: "48%", st: 0.15 });
+    }},
+    { say: "عندما يعدّل الإنسان المبلغ إلى 25 دولارًا ويرسل Command(resume)، يستأنف الرسم وينفّذ بأمان.", eq: "@T{Command}(resume=edit) @to @G{Execute Safe}", do: s => {
+      s.pulse("opt1", { at: "20%", color: "gold" });
+      s.box("res", { x: 800, y: 265, w: 420, h: 74, label: "Command(resume={usd: 25}) ▶", color: "green", font: "mono", size: 20 }, { at: "38%" });
+      s.stream("res", "fl1", { color: "green", at: "58%", span: 2.0, every: 0.5 });
+    }},
+    { sec: "الكود والتحقق من المدخلات", say: "في الكود نستدعي interrupt()، ثم نفحص قرار الإنسان قبل تنفيذ أي تعديل في قاعدة البيانات.", do: s => {
+      s.clear({ dur: 0.45 });
+      s.code("cd", { x: 800, y: 520, size: 19, title: "hitl_tool.py", lines: [
+        "@tool",
+        "def refund_order(order_id: int, amount: float):",
+        "    decision = interrupt({\"order\": order_id, \"usd\": amount})",
+        "    if decision[\"type\"] == \"reject\":",
+        "        return \"Cancelled by human reviewer\"",
+        "    final_amt = decision.get(\"usd\", amount)",
+        "    return process_refund(order_id, final_amt)"
+      ] }, { at: "0%", dur: 1.4 });
+      s.to("cd", { hl: 2, hc: "gold" }, { at: "26%", dur: 0.2 });
+      s.to("cd", { hl: 3, hc: "red" }, { at: "52%", dur: 0.2 });
+      s.to("cd", { hl: 5, hc: "green" }, { at: "74%", dur: 0.2 });
+    }},
+    { say: "وإذا أدخل الإنسان قيمة غير صالحة مثل مبلغ سالب، نتحقق منها ونعود بحافة شرطية إلى interrupt().", eq: "@T{valid}(input) ? @; @G{Proceed} : @R{Loop Back}", do: s => {
+      s.clear({ dur: 0.45 });
+      s.chain("val", ["interrupt()", "Validate Input", "Execute Refund"], { y: 430, gap: 90, h: 92, size: 22, colors: ["gold", "blue", "green"], icons: ["shield", "filter", "check"], pulse: true }, { at: "5%", st: 0.14 });
+      s.box("inv", { x: 800, y: 690, w: 360, h: 86, label: "Invalid (-$50) → Retry", color: "red", icon: "alert", size: 21 }, { at: "42%" });
+      s.link("li1", "val1", "inv", { color: "red", pulse: true }, { at: "56%" });
+      s.link("li2", "inv", "val0", { color: "orange", pulse: true }, { at: "72%" });
+    }},
+    { say: "عرض تفاصيل الأداة بوضوح في الواجهة يختصر وقت المراجعة البشرية إلى ثوانٍ معدودة.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.zone("uiz", { x: 800, y: 525, w: 720, h: 360, label: "Reviewer Card", color: "purple" }, { at: "5%" });
+      s.col("uic", ["Action: refund_order", "Target: Order #812 (Customer: Nora)", "Requested: $400  |  Policy Limit: $100"], { x: 800, y: 485, w: 600, size: 23, colors: ["blue", "teal", "gold"] }, { at: "25%", st: 0.15 });
+      s.callout("uib", { x: 800, y: 655, label: "Clear context prevents rubber-stamping!", color: "green", icon: "check" }, { at: "68%" });
+    }},
+    { sec: "فخّ الإنتاج", say: "انتبه: لا تضع interrupt() داخل حلقة غير حتمية؛ لأن الاستئناف يعيد تشغيل العقدة من بدايتها.", do: s => {
+      s.clear({ dur: 0.45 });
+      s.versus("vs", "Non-Deterministic Loop (Bug)", "Deterministic Order (Fix)", { colors: ["red", "green"] }, { at: "0%" });
+      s.col("bd", ["random() before interrupt()", "interrupt() inside dynamic loop", "Different call order on resume"], { x: 435, y: 560, w: 480, size: 22, icons: ["x", "x", "x"], colors: ["red", "red", "red"] }, { at: "24%", st: 0.15 });
+      s.col("gd", ["Keep interrupt() deterministic", "Place at start of node / tool", "Idempotent side-effects after"], { x: 1165, y: 560, w: 480, size: 22, icons: ["check", "check", "check"], colors: ["green", "green", "green"] }, { at: "52%", st: 0.15 });
+    }},
+    { say: "ولا تضع أبدًا اتصالات قواعد بيانات أو كائنات غير قابلة للتسلسل داخل حمولة المقاطعة.", do: s => {
+      s.out(["vs*", "bd*", "gd*"], { at: "0%", dur: 0.3 });
+      s.box("badp", { x: 470, y: 520, w: 410, h: 110, label: "DB Connection / Lock Object", sub: "TypeError: not JSON serializable", color: "red", icon: "x", size: 21 }, { at: "18%" });
+      s.box("gdp", { x: 1130, y: 520, w: 410, h: 110, label: "Plain Dict / Primitives", sub: "IDs, amounts, strings only ✓", color: "green", icon: "check", size: 21 }, { at: "48%" });
+    }},
+    { sec: "الخلاصة", say: "الخلاصة: interrupt(JSON) + Checkpointer + التحقق من المدخل يمنحك أتمتة آمنة بتحكم بشري.", eq: "@T{Safe HITL} = @Y{interrupt(JSON)} + @B{Checkpoint} + @G{Validate}", do: s => {
+      s.clear({ dur: 0.45 });
+      s.chain("sum", ["Sensitive Tool", "interrupt(JSON)", "Human Review", "Validate", "Safe Resume"], { y: 500, gap: 40, colors: ["orange", "gold", "purple", "blue", "green"], h: 96, size: 20, icons: ["wrench", "shield", "chat", "filter", "check"], pulse: true }, { at: "5%", st: 0.14 });
+      s.stream("sum0", "sum4", { color: "green", at: "56%", span: 2.4, every: 0.5 });
+    }}
+  ]);
+
+  // ================================================================== A3.5 Writing Effective Tools for Agents
+  X.lesson("A3.5", [
+    { sec: "الأداة كعقد مع الوكيل", say: "تخيّل مطوّرًا يغلّف 40 نقطة REST API كـ 40 أداة بأسماء غامضة مثل get_u وfetch_x2!", do: s => {
+      s.box("ag", { x: 380, y: 510, w: 260, h: 100, label: "Agent", sub: "which tool to pick?", color: "blue", icon: "brain", size: 23 }, { at: "0%" });
+      s.col("tlist", ["get_u(id)", "fetch_o_v2(q)", "list_x_all()", "upd_rec_9(d)"], { x: 1080, y: 510, w: 360, font: "mono", size: 21, colors: ["red", "red", "red", "red"] }, { at: "28%", st: 0.12 });
+      s.link("l1", "ag", "tlist1", { color: "red", pulse: true }, { at: "62%" });
+    }},
+    { say: "كثرة الأدوات المتشابهة والمعرّفات الغامضة تستنزف الـ Tokens وتُربك الوكيل وتخفض دقة الاختيار.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.bars("br", [
+        ["40 raw API wrappers", 0.90, "red", "6,200 schema tokens · 54% acc"],
+        ["5 focused agent tools", 0.18, "green", "900 schema tokens · 94% acc"]
+      ], { x: 650, y: 520, w: 540, gap: 110, size: 24, h: 34 }, { at: "10%" });
+    }},
+    { sec: "مبادئ Anthropic الخمسة", say: "الأدوات عقد بين نظام حتمي ووكيل غير حتمي؛ وتلخّص Anthropic تصميمها في خمسة مبادئ عملية.", eq: "@T{Tool Quality} = @B{Scope} + @G{Context} + @Y{Budget}", do: s => {
+      s.clear({ dur: 0.45 });
+      s.chain("p5", ["High-Impact", "Namespace", "Meaningful", "Token-Light", "Clear Spec"], { y: 480, gap: 38, h: 96, size: 20, colors: ["blue", "teal", "green", "gold", "purple"], icons: ["sparkle", "layers", "doc", "gauge", "wrench"], pulse: true }, { at: "5%", st: 0.12 });
+    }},
+    { say: "أولًا: نظّم الأدوات المترابطة في نطاقات موحّدة مثل orders_search وorders_get.", do: s => {
+      s.focus("p51", { zoom: 1.15, at: "8%" });
+      s.callout("ns", { x: 800, y: 710, label: "orders_search · orders_get · orders_refund", color: "teal", icon: "layers" }, { at: "38%" });
+    }},
+    { say: "ثانيًا: أعد حقولًا مقروءة للإنسان والوكيل، مثل اسم العميل وحالة الطلب، لا مجرد UUIDs غامضة.", do: s => {
+      s.unfocus({ at: "0%", dur: 0.25 });
+      s.out("ns", { at: "0%", dur: 0.2 });
+      s.focus("p52", { zoom: 1.15, at: "12%" });
+      s.callout("mc", { x: 800, y: 710, label: "Return status: 'shipped', customer: 'Nora' — not 'st_04'", color: "green", icon: "check" }, { at: "42%" });
+    }},
+    { say: "ثالثًا: قسّم النتائج الكبيرة بـ pagination وصفِّها واختصرها حتى لا تنفجر نافذة السياق.", eq: "@T{Response} @le @Y{max@_tokens} @; (@T{paginate + filter})", do: s => {
+      s.unfocus({ at: "0%", dur: 0.25 });
+      s.out("mc", { at: "0%", dur: 0.2 });
+      s.focus("p53", { zoom: 1.15, at: "12%" });
+      s.callout("tl", { x: 800, y: 710, label: "Default limit=10 + next_cursor + truncated=True", color: "gold", icon: "gauge" }, { at: "42%" });
+    }},
+    { say: "رابعًا: اكتب وصف الأداة ومعاملاتها كـ Prompt دقيق يوضح متى تُستخدم وما القيود المتوقعة.", do: s => {
+      s.unfocus({ at: "0%", dur: 0.25 });
+      s.out("tl", { at: "0%", dur: 0.2 });
+      s.focus("p54", { zoom: 1.15, at: "12%" });
+      s.callout("sp", { x: 800, y: 710, label: "Prompt-engineer docstrings, param enums & examples", color: "purple", icon: "wrench" }, { at: "42%" });
+    }},
+    { sec: "مقارنة الكود والتقييم", say: "لاحظ الفرق في الكود: أداة واضحة باسم منظّم، ومعامل limit، ووصف صريح للحدود.", do: s => {
+      s.clear({ dur: 0.45 });
+      s.code("cd", { x: 800, y: 520, size: 19, title: "orders_tools.py", lines: [
+        "@tool",
+        "def orders_search(email: str, status: str = \"open\", limit: int = 10):",
+        "    \"\"\"Search customer orders. Returns up to 10 concise records.",
+        "    Use orders_get(order_id) only when full line items are needed.\"\"\"",
+        "    rows = db.search_orders(email, status, limit=min(limit, 25))",
+        "    return [{\"id\": r.id, \"status\": r.status, \"total\": r.total} for r in rows]"
+      ] }, { at: "0%", dur: 1.4 });
+      s.to("cd", { hl: 1, hc: "teal" }, { at: "26%", dur: 0.2 });
+      s.to("cd", { hl: 2, hc: "purple" }, { at: "52%", dur: 0.2 });
+      s.to("cd", { hl: 5, hc: "green" }, { at: "74%", dur: 0.2 });
+    }},
+    { say: "ثم اختبر الأدوات مع الوكيل نفسه على مهام حقيقية، وراقب أخطاءه لتحسّن أوصاف الأدوات.", eq: "@T{Eval Loop}: @B{Run Agent} @to @O{Inspect Errors} @to @G{Refine Spec}", do: s => {
+      s.clear({ dur: 0.45 });
+      s.chain("ev", ["Agent Task", "Tool Call Trace", "Find Confusion", "Refine Description"], { y: 500, gap: 55, h: 96, size: 21, colors: ["blue", "teal", "orange", "green"], icons: ["brain", "search", "alert", "wrench"], pulse: true }, { at: "5%", st: 0.14 });
+      s.stream("ev0", "ev3", { color: "gold", at: "56%", span: 2.2, every: 0.5 });
+    }},
+    { sec: "فخّ الإنتاج", say: "لا تُرجع رسائل خطأ مبهمة مثل 500 Error؛ بل أعد إرشادًا عمليًا يخبر الوكيل بالخطوة التالية.", do: s => {
+      s.clear({ dur: 0.45 });
+      s.versus("vs", "Opaque Error (Stuck)", "Actionable Error (Self-Heal)", { colors: ["red", "green"] }, { at: "0%" });
+      s.col("bd", ["\"500 Internal Error\"", "\"Invalid ID\"", "50 KB raw stacktrace"], { x: 435, y: 560, w: 460, size: 22, icons: ["x", "x", "x"], colors: ["red", "red", "red"] }, { at: "24%", st: 0.15 });
+      s.col("gd", ["\"Order #881 not found\"", "\"Try orders_search(email=...)\"", "Concise hint in < 40 tokens"], { x: 1165, y: 560, w: 480, size: 22, icons: ["check", "check", "check"], colors: ["green", "green", "green"] }, { at: "52%", st: 0.15 });
+    }},
+    { say: "وتجنّب تداخل الأدوات؛ إن كانت أداة واحدة تجمع البحث والفلترة بمرونة، فهي أفضل من خمس أدوات متكررة.", do: s => {
+      s.out(["vs*", "bd*", "gd*"], { at: "0%", dur: 0.3 });
+      s.box("mrg", { x: 800, y: 515, w: 620, h: 115, label: "Consolidate overlapping endpoints", sub: "1 flexible search_orders() > 5 narrow wrappers", color: "blue", icon: "merge", size: 23 }, { at: "22%" });
+    }},
+    { sec: "الخلاصة", say: "الخلاصة: أدوات قليلة عالية الأثر، منظّمة بـ namespace، مقروءة، موفّرة للـ Tokens، ومُختبرة بالوكيل.", eq: "@T{Great Tools} = @B{Few} + @G{Clear} + @Y{Compact} + @P{Evaluated}", do: s => {
+      s.clear({ dur: 0.45 });
+      s.chain("sum", ["High-Impact", "Namespace", "Readable", "Paginated", "Agent Eval"], { y: 500, gap: 40, colors: ["blue", "teal", "green", "gold", "purple"], h: 96, size: 20, icons: ["sparkle", "layers", "doc", "gauge", "check"], pulse: true }, { at: "5%", st: 0.14 });
+      s.stream("sum0", "sum4", { color: "gold", at: "56%", span: 2.4, every: 0.5 });
+    }}
+  ]);
+
+  // ================================================================== A3.6 MCP Transports Today
+  X.lesson("A3.6", [
+    { sec: "لماذا نحتاج نواقل MCP؟", say: "عندما يتصل مضيف الذكاء الاصطناعي بخادم MCP، كيف تنتقل رسائل JSON-RPC بينهما؟", do: s => {
+      s.box("h", { x: 420, y: 500, w: 300, h: 105, label: "AI Host / IDE", sub: "Claude, Cursor, Agent", color: "blue", icon: "brain", size: 22 }, { at: "0%" });
+      s.box("srv", { x: 1180, y: 500, w: 300, h: 105, label: "MCP Server", sub: "tools, resources, prompts", color: "green", icon: "wrench", size: 22 }, { at: "28%" });
+      s.link("l1", "h", "srv", { color: "gold", pulse: true, label: "Transport?" }, { at: "52%" });
+      s.stream("h", "srv", { color: "gold", at: "62%", span: 2.0, every: 0.55 });
+    }},
+    { say: "التشغيل المحلي على جهازك يختلف تمامًا عن استدعاء خادم سحابي بعيد؛ لذا يوجد ناقلان أساسيان.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.versus("vs", "Local Machine", "Remote Cloud", { colors: ["blue", "green"] }, { at: "0%" });
+      s.col("lc", ["Same laptop / container", "Zero network latency", "Transport: stdio"], { x: 435, y: 560, w: 450, size: 23, colors: ["blue", "blue", "teal"] }, { at: "25%", st: 0.14 });
+      s.col("rm", ["SaaS / microservice URL", "Auth, TLS & load balancers", "Transport: Streamable HTTP"], { x: 1165, y: 560, w: 450, size: 23, colors: ["green", "green", "gold"] }, { at: "52%", st: 0.14 });
+    }},
+    { sec: "ناقل stdio المحلي", say: "في ناقل stdio يشغّل المضيفُ الخادمَ كعملية فرعية، ويتبادلان رسائل JSON عبر stdin وstdout.", eq: "@T{stdio}: @B{stdin} / @G{stdout} @; (@T{JSON-RPC lines})", do: s => {
+      s.clear({ dur: 0.45 });
+      s.box("hp", { x: 420, y: 480, w: 300, h: 105, label: "Host Process", sub: "spawns child process", color: "blue", icon: "cpu", size: 22 }, { at: "5%" });
+      s.box("sp", { x: 1180, y: 480, w: 310, h: 105, label: "MCP Subprocess", sub: "reads stdin · writes stdout", color: "green", icon: "code", size: 22 }, { at: "26%" });
+      s.link("lsi", "hp", "sp", { color: "blue", pulse: true, label: "stdin (JSON)" }, { at: "48%" });
+      s.link("lso", "sp", "hp", { color: "green", pulse: true, label: "stdout (JSON)" }, { at: "62%" });
+    }},
+    { say: "قاعدة ذهبية في stdio: لا تطبع أي سجلات إلى stdout أبدًا! استخدم stderr فقط كي لا يفسد البروتوكول.", do: s => {
+      s.focus(["sp", "lso"], { zoom: 1.12, at: "8%" });
+      s.callout("err", { x: 800, y: 720, label: "print() to stdout corrupts JSON-RPC! Always log to stderr.", color: "red", icon: "alert" }, { at: "40%" });
+    }},
+    { say: "ويُفضَّل أن يدعم أي عميل MCP ناقل stdio كلما أمكن لبساطته وأمانه المحلي.", do: s => {
+      s.unfocus({ at: "0%", dur: 0.3 });
+      s.out("err", { at: "0%", dur: 0.25 });
+      s.callout("ok", { x: 800, y: 720, label: "Local files, Git, CLI tools → stdio is the default choice ✓", color: "green", icon: "check" }, { at: "32%" });
+    }},
+    { sec: "ناقل Streamable HTTP وتطوره", say: "أما للخوادم البعيدة، فيستقبل الخادم طلبات HTTP POST على نقطة واحدة مثل /mcp.", eq: "@T{POST /mcp} @to @B{JSON} @; @text{or} @; @G{SSE Stream}", do: s => {
+      s.clear({ dur: 0.45 });
+      s.box("cl", { x: 350, y: 495, w: 270, h: 100, label: "Remote Client", sub: "POST /mcp", color: "blue", icon: "globe", size: 22 }, { at: "5%" });
+      s.box("ep", { x: 790, y: 495, w: 270, h: 100, label: "/mcp Endpoint", sub: "single HTTP route", color: "gold", icon: "cloud", size: 22 }, { at: "25%" });
+      s.box("js", { x: 1250, y: 375, w: 300, h: 88, label: "JSON Object", sub: "fast single reply", color: "teal", icon: "doc", size: 21 }, { at: "48%" });
+      s.box("ss", { x: 1250, y: 615, w: 300, h: 88, label: "SSE Stream", sub: "request-scoped progress", color: "green", icon: "sparkle", size: 21 }, { at: "62%" });
+      s.link("l1", "cl", "ep", { color: "gold", pulse: true }, { at: "34%" });
+      s.link("l2", "ep", "js", { color: "teal", pulse: true }, { at: "54%" });
+      s.link("l3", "ep", "ss", { color: "green", pulse: true }, { at: "68%" });
+    }},
+    { say: "تطوّر هذا الناقل بسرعة: بدأ في 2025-03-26 بديلًا لـ HTTP+SSE، ثم بُسِّط في مراجعة 2026-07-28.", do: s => {
+      s.clear({ dur: 0.45 });
+      s.chain("tl", ["2024: HTTP+SSE", "2025-03: Streamable", "2026-07: Stateless"], { y: 495, gap: 65, h: 105, size: 21, colors: ["red", "gold", "green"], icons: ["x", "cloud", "check"], pulse: true }, { at: "5%", st: 0.16 });
+      s.callout("nt", { x: 800, y: 720, label: "2026-07-28 removed GET stream & protocol-level sessions", color: "teal", icon: "sparkle" }, { at: "55%" });
+    }},
+    { say: "إزالة جلسات البروتوكول ونقطة GET جعلت الخوادم البعيدة أسهل في التوسّع وتوزيع الحمل (Load Balancing).", do: s => {
+      s.focus("tl2", { zoom: 1.15, at: "10%" });
+      s.pulse("tl2", { at: "45%", color: "green" });
+    }},
+    { sec: "مثال الطلب والرد", say: "عمليًا، يرسل العميل ترويسة Accept تقبل JSON وSSE معًا على نفس مسار POST /mcp.", do: s => {
+      s.clear({ dur: 0.45 });
+      s.code("cd", { x: 800, y: 520, size: 19, title: "mcp_request.http", lines: [
+        "POST /mcp HTTP/1.1",
+        "Host: api.example.com",
+        "Accept: application/json, text/event-stream",
+        "Authorization: Bearer <token>",
+        "",
+        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"orders_get\"}}"
+      ] }, { at: "0%", dur: 1.4 });
+      s.to("cd", { hl: 0, hc: "gold" }, { at: "25%", dur: 0.2 });
+      s.to("cd", { hl: 2, hc: "green" }, { at: "50%", dur: 0.2 });
+      s.to("cd", { hl: 5, hc: "blue" }, { at: "74%", dur: 0.2 });
+    }},
+    { sec: "فخّ الإنتاج والتوافق", say: "تحقّق دائمًا من إصدار المواصفة الذي يدعمه الـ SDK لديك، وخطّط للتوافق العكسي مع العملاء الأقدم.", do: s => {
+      s.clear({ dur: 0.45 });
+      s.versus("vs2", "Version Mismatch (Break)", "Version-Aware (Safe)", { colors: ["red", "green"] }, { at: "0%" });
+      s.col("bd", ["Assume old /sse endpoint exists", "Expect sticky session IDs blindly", "No fallback on older clients"], { x: 435, y: 560, w: 470, size: 22, icons: ["x", "x", "x"], colors: ["red", "red", "red"] }, { at: "24%", st: 0.15 });
+      s.col("gd", ["Check SDK target spec version", "Support POST /mcp JSON + SSE", "Plan backward compatibility"], { x: 1165, y: 560, w: 470, size: 22, icons: ["check", "check", "check"], colors: ["green", "green", "green"] }, { at: "52%", st: 0.15 });
+    }},
+    { say: "ولا تنسَ تأمين نقطة /mcp البعيدة بمصادقة Bearer/OAuth والتحقق من ترويسة Origin.", do: s => {
+      s.out(["vs2*", "bd*", "gd*"], { at: "0%", dur: 0.3 });
+      s.box("sec", { x: 800, y: 515, w: 620, h: 115, label: "Remote HTTP Security Checklist", sub: "TLS + OAuth/Bearer + Origin validation on /mcp", color: "gold", icon: "shieldok", size: 22 }, { at: "20%" });
+    }},
+    { sec: "الخلاصة", say: "الخلاصة: استخدم stdio للأدوات المحلية، وStreamable HTTP عبر POST /mcp للخوادم البعيدة.", eq: "@T{MCP}: @B{stdio (Local)} @quad | @quad @G{Streamable HTTP (Remote)}", do: s => {
+      s.clear({ dur: 0.45 });
+      s.chain("sum", ["Local Host", "stdio (stdin/out)", "Remote Client", "POST /mcp", "JSON or SSE"], { y: 500, gap: 38, colors: ["blue", "teal", "soft", "gold", "green"], h: 96, size: 20, icons: ["cpu", "code", "globe", "cloud", "check"], pulse: true }, { at: "5%", st: 0.14 });
+      s.stream("sum2", "sum4", { color: "green", at: "56%", span: 2.2, every: 0.5 });
+    }}
+  ]);
+
+  // ================================================================== A3.7 GraphRAG & Long-Term Agent Memory
+  X.lesson("A3.7", [
+    { sec: "حدود البحث المتجهي العادي", say: "اسأل نظام RAG تقليديًا: «ما أبرز المخاطر المشتركة عبر كل العقود الـ 500 في شركتنا؟»", do: s => {
+      s.bubble("q", { text: "Main risks across all 500 contracts?", side: "u", x: 800, y: 295, w: 460, color: "blue" }, { at: "0%" });
+      s.col("ch", ["Chunk #12 (Contract A)", "Chunk #89 (Contract B)", "Chunk #401 (Contract C)"], { x: 800, y: 540, w: 420, size: 22, colors: ["orange", "orange", "orange"] }, { at: "35%", st: 0.15 });
+      s.callout("al", { x: 800, y: 745, label: "Top-K chunks miss corpus-wide & multi-hop links!", color: "red", icon: "alert" }, { at: "70%" });
+    }},
+    { say: "البحث المتجهي يلتقط قطعًا متشابهة منفردة، لكنه يعجز عن رؤية الشبكة الكاملة التي تربط المستندات.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.versus("vs", "Vector RAG (Isolated Pieces)", "GraphRAG (Evidence Board)", { colors: ["red", "green"] }, { at: "0%" });
+      s.col("vl", ["Finds local text similarity", "Misses 2-hop / 3-hop links", "Weak on global summaries"], { x: 435, y: 560, w: 450, size: 22, icons: ["check", "x", "x"], colors: ["teal", "red", "red"] }, { at: "24%", st: 0.15 });
+      s.col("gl", ["Extracts Entities & Relations", "Traverses multi-hop paths", "Summarizes whole communities"], { x: 1165, y: 560, w: 450, size: 22, icons: ["check", "check", "check"], colors: ["green", "green", "green"] }, { at: "52%", st: 0.15 });
+    }},
+    { sec: "كيف يعمل GraphRAG؟", say: "يستخرج GraphRAG الكيانات والعلاقات في رسم معرفي، تمامًا مثل لوحة المحقق التي تربط كل خيط.", eq: "@T{GraphRAG} = (@B{Entities}, @; @G{Relations}) + @Y{Communities}", do: s => {
+      s.clear({ dur: 0.45 });
+      s.box("c1", { x: 380, y: 400, w: 250, h: 86, label: "Contract A", color: "blue", icon: "doc", size: 21 }, { at: "5%" });
+      s.box("c2", { x: 380, y: 630, w: 250, h: 86, label: "Contract B", color: "blue", icon: "doc", size: 21 }, { at: "18%" });
+      s.box("vn", { x: 800, y: 515, w: 270, h: 92, label: "Vendor X", sub: "Shared Entity", color: "gold", icon: "sparkle", size: 22 }, { at: "32%" });
+      s.box("rk", { x: 1220, y: 515, w: 280, h: 92, label: "Single-Source Risk", sub: "Community Summary", color: "red", icon: "alert", size: 21 }, { at: "48%" });
+      s.link("l1", "c1", "vn", { color: "green", pulse: true, label: "DEPENDS_ON" }, { at: "56%" });
+      s.link("l2", "c2", "vn", { color: "green", pulse: true, label: "DEPENDS_ON" }, { at: "64%" });
+      s.link("l3", "vn", "rk", { color: "red", pulse: true, label: "EXPOSES" }, { at: "72%" });
+    }},
+    { say: "بمجرد تتبع الحواف في الرسم، يكتشف الوكيل فورًا أن 40 عقدًا تعتمد على مورّد واحد خطر!", do: s => {
+      s.stream("c1", "rk", { color: "gold", at: "15%", span: 2.2, every: 0.5 });
+      s.stream("c2", "rk", { color: "gold", at: "25%", span: 2.2, every: 0.5 });
+      s.pulse("rk", { at: "68%", color: "red" });
+    }},
+    { say: "كما تُلخَّص كل مجموعة كيانات مترابطة مسبقًا للإجابة عن الأسئلة الشاملة بسرعة ودقة.", do: s => {
+      s.focus("rk", { zoom: 1.15, at: "10%" });
+      s.callout("cm", { x: 800, y: 740, label: "Pre-computed community summaries answer global queries in 1 hop ✓", color: "green", icon: "check" }, { at: "45%" });
+    }},
+    { sec: "أنواع ذاكرة الوكيل الثلاثة", say: "وبالتوازي مع GraphRAG، تنقسم ذاكرة الوكيل طويلة المدى إلى ثلاثة أنواع متكاملة.", eq: "@T{Memory} = @B{Semantic} + @G{Episodic} + @P{Procedural}", do: s => {
+      s.clear({ dur: 0.45 });
+      s.box("m1", { x: 350, y: 510, w: 360, h: 135, label: "Semantic Memory", sub: "Facts & user preferences", color: "blue", icon: "doc", size: 22 }, { at: "10%" });
+      s.box("m2", { x: 800, y: 510, w: 360, h: 135, label: "Episodic Memory", sub: "Past runs & interactions", color: "green", icon: "chat", size: 22 }, { at: "34%" });
+      s.box("m3", { x: 1250, y: 510, w: 360, h: 135, label: "Procedural Memory", sub: "Learned rules & skills", color: "purple", icon: "wrench", size: 22 }, { at: "58%" });
+    }},
+    { say: "الدلالية تحفظ الحقائق مثل «يفضّل Python»، والحدثية تحفظ تجارب سابقة نجحت أو فشلت.", do: s => {
+      s.focus(["m1", "m2"], { zoom: 1.12, at: "10%" });
+      s.pulse("m1", { at: "35%", color: "blue" });
+      s.pulse("m2", { at: "68%", color: "green" });
+    }},
+    { say: "أما الإجرائية فتحفظ القواعد المتعلّمة مثل: «تحقّق دائمًا من الاختبارات قبل تسليم الكود».", do: s => {
+      s.unfocus({ at: "0%", dur: 0.25 });
+      s.focus("m3", { zoom: 1.15, at: "15%" });
+      s.pulse("m3", { at: "55%", color: "purple" });
+    }},
+    { sec: "تحديث الذاكرة والخصوصية", say: "عمليًا نخزّن كل حقيقة مع نوعها وطابعها الزمني وفترة صلاحيتها (TTL) لتبقى الذاكرة نظيفة.", do: s => {
+      s.clear({ dur: 0.45 });
+      s.code("cd", { x: 800, y: 520, size: 19, title: "agent_memory.py", lines: [
+        "memory.upsert(",
+        "    user_id=uid,",
+        "    kind=\"semantic\",",
+        "    fact=\"Prefers concise Arabic replies with Python code\",",
+        "    updated_at=now(),",
+        "    ttl_days=180",
+        ")"
+      ] }, { at: "0%", dur: 1.4 });
+      s.to("cd", { hl: 2, hc: "blue" }, { at: "26%", dur: 0.2 });
+      s.to("cd", { hl: 3, hc: "green" }, { at: "52%", dur: 0.2 });
+      s.to("cd", { hl: 4, hc: "gold" }, { at: "74%", dur: 0.2 });
+    }},
+    { say: "وعند تعارض حقيقة جديدة مع قديمة، نستبدل القديمة فورًا ولا نترك الحقيقتين تتصارعان في الـ Prompt.", eq: "@T{Upsert}: @R{Old Fact} @to @G{New Fact} + @Y{Timestamp}", do: s => {
+      s.clear({ dur: 0.45 });
+      s.box("old", { x: 430, y: 510, w: 360, h: 105, label: "Old: Prefers Java", sub: "2025-01 · overwritten", color: "red", icon: "x", size: 22 }, { at: "10%" });
+      s.box("new", { x: 1170, y: 510, w: 360, h: 105, label: "New: Prefers Python", sub: "2026-11 · active ✓", color: "green", icon: "check", size: 22 }, { at: "42%" });
+      s.link("lup", "old", "new", { color: "gold", pulse: true, label: "upsert + timestamp" }, { at: "62%" });
+    }},
+    { say: "والأهم أخلاقيًا وتقنيًا: امنح المستخدم واجهة واضحة لعرض ذكرياته المخزنة وحذف أيّ منها فورًا.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.callout("priv", { x: 800, y: 470, label: "User Privacy Control: View · Edit · Delete Stored Memories", color: "teal", icon: "shieldok" }, { at: "15%" });
+      s.box("ttl", { x: 800, y: 630, w: 500, h: 95, label: "Enforce ttl_days & tenant isolation", sub: "expire stale facts automatically", color: "gold", icon: "gauge", size: 21 }, { at: "52%" });
+    }},
+    { say: "بدمج Vector RAG السريع مع GraphRAG والذاكرة الثلاثية، يحصل الوكيل على استرجاع دقيق وشامل.", do: s => {
+      s.clear({ dur: 0.45 });
+      s.box("ag", { x: 800, y: 315, w: 300, h: 92, label: "Complete Agent", sub: "unified recall", color: "gold", icon: "brain", size: 22 }, { at: "5%" });
+      s.box("r1", { x: 360, y: 590, w: 340, h: 105, label: "Vector RAG", sub: "fast local chunks", color: "blue", icon: "search", size: 21 }, { at: "25%" });
+      s.box("r2", { x: 800, y: 590, w: 340, h: 105, label: "GraphRAG", sub: "multi-hop & global", color: "teal", icon: "layers", size: 21 }, { at: "40%" });
+      s.box("r3", { x: 1240, y: 590, w: 340, h: 105, label: "3-Tier Memory", sub: "facts, runs & rules", color: "green", icon: "sparkle", size: 21 }, { at: "55%" });
+      s.link("lr1", "r1", "ag", { color: "blue", pulse: true }, { at: "62%" });
+      s.link("lr2", "r2", "ag", { color: "teal", pulse: true }, { at: "68%" });
+      s.link("lr3", "r3", "ag", { color: "green", pulse: true }, { at: "74%" });
+    }},
+    { sec: "الخلاصة", say: "الخلاصة: GraphRAG يربط الكيانات عبر المستندات، والذاكرة الثلاثية تحفظ الحقائق والتجارب بأمان.", eq: "@T{Recall} = @B{GraphRAG} + @G{3-Tier Memory} + @Y{TTL & Control}", do: s => {
+      s.clear({ dur: 0.45 });
+      s.chain("sum", ["Entities + Graph", "Semantic", "Episodic", "Procedural", "Upsert + Delete"], { y: 500, gap: 38, colors: ["teal", "blue", "green", "purple", "gold"], h: 96, size: 20, icons: ["layers", "doc", "chat", "wrench", "shieldok"], pulse: true }, { at: "5%", st: 0.14 });
+      s.stream("sum0", "sum4", { color: "gold", at: "56%", span: 2.4, every: 0.5 });
+    }}
+  ]);
+
+  // ================================================================== A3.8 Code Execution Sandboxes & Computer-Use Agents
+  X.lesson("A3.8", [
+    { sec: "لماذا ينفّذ الوكيل الكود؟", say: "اطلب من نموذج لغوي حساب إحصاءات ملف CSV ضخم نصيًا؛ سيخترع أرقامًا تبدو مقنعة لكنها خاطئة!", do: s => {
+      s.bubble("q", { text: "Compute revenue growth from sales.csv", side: "u", x: 800, y: 295, w: 450, color: "blue" }, { at: "0%" });
+      s.box("llm", { x: 800, y: 515, w: 420, h: 100, label: "Text-Only LLM Guess", sub: "+14.2% (hallucinated math!)", color: "red", icon: "alert", size: 22 }, { at: "35%" });
+      s.mark("mk", "llm", "x", { at: "68%" });
+    }},
+    { say: "كتابة كود Python وتشغيله يمنحان الوكيل دقة رياضية تامة؛ لكن تشغيله على خادمك كارثة أمنية!", do: s => {
+      s.clear({ dur: 0.4 });
+      s.versus("vs", "Host exec() (Catastrophic)", "Isolated Sandbox (Safe)", { colors: ["red", "green"] }, { at: "0%" });
+      s.col("bd", ["Reads /etc/passwd & .env keys", "Deletes files or mines crypto", "Infinite loop freezes API"], { x: 435, y: 560, w: 460, size: 22, icons: ["x", "x", "x"], colors: ["red", "red", "red"] }, { at: "24%", st: 0.15 });
+      s.col("gd", ["Ephemeral MicroVM per run", "Zero host secrets or disk", "Hard CPU, RAM & time caps"], { x: 1165, y: 560, w: 460, size: 22, icons: ["check", "check", "check"], colors: ["green", "green", "green"] }, { at: "52%", st: 0.15 });
+    }},
+    { sec: "معمارية الـ Sandbox المعزولة", say: "لذلك نعزل كل كود غير موثوق داخل MicroVM مؤقتة مثل E2B أو Firecracker، ونُعيد المخرجات فقط.", eq: "@T{Safe Run} = @B{MicroVM} + @R{No Secrets} + @Y{Timeout}", do: s => {
+      s.clear({ dur: 0.45 });
+      s.box("ag", { x: 260, y: 500, w: 230, h: 96, label: "Agent Code", sub: "untrusted Python", color: "orange", icon: "code", size: 21 }, { at: "5%" });
+      s.zone("vm", { x: 810, y: 500, w: 540, h: 310, label: "Ephemeral MicroVM (E2B / Firecracker)", color: "blue" }, { at: "22%" });
+      s.col("iso", ["Read-only root FS", "No host .env secrets", "allow_internet = False"], { x: 810, y: 510, w: 380, size: 21, colors: ["blue", "red", "gold"], icons: ["shield", "shieldok", "filter"] }, { at: "35%", st: 0.12 });
+      s.box("out", { x: 1350, y: 500, w: 230, h: 96, label: "Output Only", sub: "stdout / PNG chart", color: "green", icon: "check", size: 21 }, { at: "58%" });
+      s.link("l1", "ag", "iso1", { color: "orange", pulse: true }, { at: "45%" });
+      s.link("l2", "iso1", "out", { color: "green", pulse: true }, { at: "68%" });
+    }},
+    { say: "البيئة المعزولة تمنع الوصول إلى أسرار الخادم وتغلق الشبكة إلا لقائمة سماح محددة (allowlist).", do: s => {
+      s.focus(["vm", "iso0", "iso1", "iso2"], { zoom: 1.12, at: "10%" });
+      s.pulse("iso1", { at: "45%", color: "red" });
+      s.pulse("iso2", { at: "70%", color: "gold" });
+    }},
+    { say: "ونفرض سقفًا صارمًا للمهلة مثل 20 ثانية وسقفًا للذاكرة والمخرجات كي لا يعلّق أي تنفيذ.", do: s => {
+      s.unfocus({ at: "0%", dur: 0.3 });
+      s.callout("cap", { x: 810, y: 745, label: "timeout=20s  |  RAM cap  |  stdout[:4000] truncation", color: "gold", icon: "gauge" }, { at: "28%" });
+    }},
+    { say: "في الكود نستدعي الـ Sandbox ضمن كتلة with لتُدمَّر البيئة المؤقتة فور انتهاء التنفيذ.", do: s => {
+      s.clear({ dur: 0.45 });
+      s.code("cd", { x: 800, y: 520, size: 19, title: "sandbox_runner.py", lines: [
+        "with Sandbox(timeout=20, allow_internet=False) as sb:",
+        "    res = sb.run_python(agent_generated_code)",
+        "    return {",
+        "        \"stdout\": res.stdout[:4000],",
+        "        \"error\": res.error",
+        "    }"
+      ] }, { at: "0%", dur: 1.3 });
+      s.to("cd", { hl: 0, hc: "blue" }, { at: "26%", dur: 0.2 });
+      s.to("cd", { hl: 1, hc: "orange" }, { at: "52%", dur: 0.2 });
+      s.to("cd", { hl: 3, hc: "green" }, { at: "74%", dur: 0.2 });
+    }},
+    { sec: "وكلاء استخدام الحاسوب والمتصفح", say: "نفس مبدأ العزل ينطبق على وكلاء المتصفح والحاسوب: يقرؤون الشاشة أو DOM، ينفّذون، ثم يتحققون.", eq: "@T{Computer-Use}: @B{Observe} @to @P{Act} @to @G{Verify}", do: s => {
+      s.clear({ dur: 0.45 });
+      s.chain("cu", ["Observe (DOM/Screen)", "Decide Action", "Act (Click/Type)", "Verify New State"], { y: 495, gap: 55, h: 100, size: 20, colors: ["blue", "teal", "purple", "green"], icons: ["search", "brain", "wrench", "check"], pulse: true }, { at: "5%", st: 0.14 });
+      s.stream("cu0", "cu3", { color: "gold", at: "56%", span: 2.2, every: 0.5 });
+    }},
+    { say: "خطوة التحقق حاسمة؛ بعد النقر على زر، يجب أن يتأكد الوكيل من تغيّر الصفحة قبل المتابعة.", do: s => {
+      s.focus(["cu2", "cu3"], { zoom: 1.15, at: "10%" });
+      s.pulse("cu3", { at: "52%", color: "green" });
+    }},
+    { say: "وللإجراءات الحساسة في المتصفح كالدفع أو الحذف، نربط الوكيل بمقاطعة بشرية interrupt() كما تعلمنا.", do: s => {
+      s.unfocus({ at: "0%", dur: 0.25 });
+      s.callout("hi", { x: 800, y: 720, label: "Pair Computer-Use with interrupt() before irreversible clicks!", color: "gold", icon: "shield" }, { at: "30%" });
+    }},
+    { sec: "فخّ الإنتاج", say: "تذكّر القاعدة الذهبية: لا تستدعِ exec() أو eval() في عملية خادم الإنتاج أبدًا مهما بدت آمنة!", do: s => {
+      s.clear({ dur: 0.45 });
+      s.box("nev", { x: 800, y: 515, w: 680, h: 120, label: "NEVER call Python exec() / eval() on host!", sub: "Prompt injection + exec() = full server takeover", color: "red", icon: "alert", size: 23 }, { at: "12%" });
+      s.mark("mk2", "nev", "x", { at: "55%" });
+    }},
+    { say: "إقلاع MicroVM يستغرق أجزاءً من الثانية فقط، لكنه يفصل النواة ويحميك من اختراق الخادم بالكامل.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.bars("sp", [
+        ["Host exec() — 0 ms boot, catastrophic risk", 0.90, "red", "Full Host Breach"],
+        ["MicroVM Sandbox — ~150 ms boot, kernel isolated", 0.15, "green", "Isolated & Safe ✓"]
+      ], { x: 650, y: 520, w: 540, gap: 110, size: 23, h: 34 }, { at: "12%" });
+    }},
+    { sec: "الخلاصة", say: "الخلاصة: نفّذ كود الوكيل داخل MicroVM مؤقتة بلا أسرار، وبقيود وقت وشبكة صارمة.", eq: "@T{Sandbox} = @B{MicroVM} + @G{Least Privilege} + @Y{Hard Caps}", do: s => {
+      s.clear({ dur: 0.45 });
+      s.chain("sum", ["Untrusted Code", "MicroVM Sandbox", "No Secrets / Net", "20s Timeout", "Safe Output"], { y: 500, gap: 38, colors: ["orange", "blue", "red", "gold", "green"], h: 96, size: 20, icons: ["code", "shield", "shieldok", "gauge", "check"], pulse: true }, { at: "5%", st: 0.14 });
+      s.stream("sum0", "sum4", { color: "green", at: "56%", span: 2.4, every: 0.5 });
+    }}
+  ]);
+})(window.Explainer);
