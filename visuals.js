@@ -96,8 +96,13 @@
       <!-- Architecture Flow Pills -->
       <rect x="${ax}" y="514" width="436" height="124" rx="16" fill="#101f33" stroke="#22384f" stroke-width="1.5"/>
       <text x="${isAr ? ax + 412 : ax + 24}" y="544" ${dir} font-family="${isAr ? FA : FM}" font-size="13.5" font-weight="700" fill="#3db4f2">${isAr ? "⚙️ خطوات آلية العمل" : "⚙️ ARCHITECTURE FLOW"}</text>
-      <text x="${isAr ? ax + 412 : ax + 24}" y="580" ${dir} font-family="${FD}" font-size="15" font-weight="700" fill="#ffffff">${esc(l.vl.slice(0, 4).join("  →  "))}</text>
-      <text x="${isAr ? ax + 412 : ax + 24}" y="610" ${dir} font-family="${FM}" font-size="12.5" fill="#9fb2c6">${esc(l.v.toUpperCase())} DIAGRAM</text>
+      ${(() => {
+        // Long step labels would overflow the 436px card: wrap onto two lines, ellipsize the rest.
+        const all = wrap(l.vl.slice(0, 4).join(" → "), 44), flow = all.slice(0, 2);
+        if (all.length > 2) flow[1] = flow[1].replace(/\s*\S*$/, "") + " …";
+        return flow.map((ln, i) => `<text x="${isAr ? ax + 412 : ax + 24}" y="${574 + i * 22}" ${dir} font-family="${FD}" font-size="15" font-weight="700" fill="#ffffff">${esc(ln)}</text>`).join("");
+      })()}
+      <text x="${isAr ? ax + 412 : ax + 24}" y="622" ${dir} font-family="${FM}" font-size="12.5" fill="#9fb2c6">${esc(l.v.toUpperCase())} DIAGRAM</text>
     `;
 
     // Bottom Row: Mistake vs Pro Tip
