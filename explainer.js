@@ -1203,6 +1203,15 @@
     let audio = null, voiceBeat = -1, speaking = false, holdSince = 0, token = 0;
     const speeds = [1, 1.25, 1.5, 0.75];
     const missing = new Set();
+    const preloadCache = new Map();
+    function preloadBeat(b) {
+      const B = film.beats[b];
+      if (!B || !B.say || !B.measured || missing.has(B.key) || preloadCache.has(B.key)) return;
+      if (preloadCache.size > 6) preloadCache.clear();
+      const p = new Audio(base + B.key + ".mp3");
+      p.preload = "auto";
+      preloadCache.set(B.key, p);
+    }
     function stopVoice() {
       token++;
       if (audio) { try { audio.pause(); audio.onended = audio.onerror = null; } catch (e) { } audio = null; }
@@ -1226,13 +1235,19 @@
       if (!voiceOn || !B.say) return;
       if (offset > B.vd - 0.15) return;
       if (!B.measured || missing.has(B.key)) { if (offset < 0.35) speakFallback(B.say, tok); return; }
-      const a = new Audio(base + B.key + ".mp3");
+      const a = preloadCache.get(B.key) || new Audio(base + B.key + ".mp3");
+      preloadCache.delete(B.key);
       a.playbackRate = speed;
       a.onerror = () => { if (tok !== token) return; missing.add(B.key); audio = null; if (offset < 0.35) speakFallback(B.say, tok); };
       a.onended = () => { if (tok === token) audio = null; };
-      if (offset > 0.05) { try { a.currentTime = offset; } catch (e) { } }
+      const applyOffset = () => {
+        if (tok === token && offset > 0.05) { try { a.currentTime = offset; } catch (e) { } }
+      };
+      if (a.readyState >= 1) applyOffset();
+      else a.addEventListener("loadedmetadata", applyOffset, { once: true });
       audio = a;
       a.play().catch(() => { if (tok === token) { audio = null; } });
+      preloadBeat(b + 1);
     }
     const busy = () => (audio && !audio.paused && !audio.ended) || speaking;
     function draw() {
