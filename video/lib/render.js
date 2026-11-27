@@ -8,7 +8,7 @@ const { pathToFileURL } = require("url");
 const puppeteer = require("puppeteer-core");
 const { FFMPEG } = require("./media");
 
-const PAGE = path.join(__dirname, "..", "page", "render.html");
+const PAGE = path.join(__dirname, "..", "page", "explain.html");
 const CANDIDATES = [
   process.env.BROWSER,
   "C:/Program Files/Google/Chrome/Application/chrome.exe",

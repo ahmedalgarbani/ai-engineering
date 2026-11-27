@@ -1,29 +1,27 @@
 #!/usr/bin/env node
-// Arabic course video builder.
+// Arabic motion-explainer video builder (one 3Blue1Brown-style explainer per lesson).
 //
-//   node build.js script                  build narration script (out/script.json, out/narration_ar.md)
-//   node build.js tts                     synthesize Arabic voice clips (edge-tts, cached)
-//   node build.js plan                    measure clips and compute the exact timeline
-//   node build.js stills C1.1 [...]       PNG stills per chapter for visual QA (out/stills/)
-//   node build.js render [--only C1.1,S1] [--workers 5] [--fps 30]
-//   node build.js assemble                join segments → full course + per-stage videos
+//   node build.js script                  narration of every explainer (out/script.json, out/narration_ar.md)
+//   node build.js tts                     synthesize the Arabic voice clips (edge-tts, cached in out/voice/)
+//   node build.js plan                    measure clips → exact timelines (out/plan.json) + ../explainer-voice.js for the app
+//   node build.js stills C2.2 [...]       PNG of every step's settled frame, for visual QA (out/stills/)
+//   node build.js render [--only C2.2,S1] [--workers 5]
+//   node build.js assemble                join lessons → full course + one video per stage
 //   node build.js all                     everything above in order
 //
-// Options: --voice ar-SA-HamedNeural  --rate +10%  --encoder x264|nvenc  --crf 20  --scale 2
+// Options: --voice ar-SA-HamedNeural  --rate +10%  --encoder x264|nvenc  --crf 20  --scale 2  --fps 30
 //          render: --no-reuse (re-render instead of verifying unchanged segments)  --min-battery 30 (0 = never pause)
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const { spawn } = require("child_process");
-const { loadCourse } = require("./lib/course");
-const { buildScript, scriptMarkdown } = require("./lib/script");
-const { planSegment } = require("./lib/plan");
+const { loadCourse, ROOT, EXPLAINER_FILES } = require("./lib/course");
 const { probeDuration, pool, run, FFMPEG } = require("./lib/media");
 const { segmentCues, toSrt } = require("./lib/subs");
 
 const OUT = path.join(__dirname, "out");
-const TTS = path.join(OUT, "tts");
-const SEG = path.join(OUT, "segments");
+const VOICE = path.join(OUT, "voice");
+const SEG = path.join(OUT, "explainers");
 const args = process.argv.slice(2);
 const cmd = args[0];
 const opt = (name, def) => { const i = args.indexOf("--" + name); return i >= 0 ? args[i + 1] : def; };
@@ -40,61 +38,86 @@ const O = {
 };
 fs.mkdirSync(OUT, { recursive: true });
 const hash = x => require("crypto").createHash("sha1").update(JSON.stringify(x)).digest("hex").slice(0, 12);
-// Timing tag: the plan without its music offset (that only affects the audio mix).
 const ptagOf = p => { const { musicOffset, ...rest } = p; return hash(rest); };
 const readJson = f => JSON.parse(fs.readFileSync(f, "utf8"));
 const writeJson = (f, d) => fs.writeFileSync(f, JSON.stringify(d, null, 1));
 const hms = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0"); };
+const course = () => loadCourse({ voice: O.voice, rate: O.rate });
+const segId = l => `${String(l.index + 1).padStart(3, "0")}-${l.id}`;
 
 // ---------------------------------------------------------------- script
 function cmdScript() {
-  const script = buildScript(loadCourse(), { voice: O.voice, rate: O.rate });
+  const { flat, X } = course();
+  const missing = flat.filter(l => !X.has(l.id)).map(l => l.id);
+  const segments = flat.filter(l => X.has(l.id)).map(l => ({
+    id: segId(l), lesson: l.id, title: l.t, acc: l.acc, stage: l.stage.id, module: l.module.id,
+    beats: X.defs[l.id].beats.map(b => ({ say: X.speakText(b.say), key: X.voiceKey(b.say), sec: b.sec || null }))
+  }));
+  const script = { voice: O.voice, rate: O.rate, segments };
   writeJson(path.join(OUT, "script.json"), script);
-  fs.writeFileSync(path.join(OUT, "narration_ar.md"), scriptMarkdown(script));
-  const clips = script.segments.flatMap(s => s.chapters.flatMap(c => c.clips));
-  const chars = clips.reduce((a, c) => a + c.text.length, 0);
-  console.log(`script: ${script.segments.length} segments, ${clips.length} voice clips, ${chars} chars (~${Math.round(chars / 10.7 / 60)} min of speech)`);
+  const md = ["# نص التعليق الصوتي — شرح الموشن لكل درس", ""];
+  segments.forEach(s => {
+    md.push(`## ${s.lesson} · ${s.title[1]}`, "");
+    s.beats.forEach(b => { if (b.sec) md.push(`**${b.sec}**`, ""); md.push(`- ${b.say}`); });
+    md.push("");
+  });
+  fs.writeFileSync(path.join(OUT, "narration_ar.md"), md.join("\n"));
+  const beats = segments.reduce((a, s) => a + s.beats.length, 0), chars = segments.reduce((a, s) => a + s.beats.reduce((x, b) => x + b.say.length, 0), 0);
+  console.log(`script: ${segments.length} explainers, ${beats} narrated steps, ${chars} chars (~${Math.round(chars / 13.5 / 60)} min of speech)`);
+  if (missing.length) console.log(`  no explainer yet: ${missing.join(", ")}`);
   return script;
 }
 
 // ---------------------------------------------------------------- tts
 function cmdTts() {
-  const script = fs.existsSync(path.join(OUT, "script.json")) ? readJson(path.join(OUT, "script.json")) : cmdScript();
+  const script = cmdScript();
   const seen = new Set(), jobs = [];
-  script.segments.forEach(s => s.chapters.forEach(c => c.clips.forEach(k => { if (!seen.has(k.key)) { seen.add(k.key); jobs.push({ key: k.key, text: k.text }); } })));
-  const jf = path.join(OUT, "tts_jobs.json");
+  script.segments.forEach(s => s.beats.forEach(b => { if (b.say && !seen.has(b.key)) { seen.add(b.key); jobs.push({ key: b.key, text: b.say }); } }));
+  const jf = path.join(OUT, "voice_jobs.json");
   writeJson(jf, jobs);
-  console.log(`tts: ${jobs.length} clips with ${script.voice}`);
+  console.log(`tts: ${jobs.length} clips with ${script.voice} ${script.rate}`);
   return new Promise((res, rej) => {
-    const p = spawn("python", [path.join(__dirname, "tts.py"), jf, TTS, "--voice", script.voice, "--rate", script.rate, "--concurrency", "6"], { stdio: "inherit" });
+    const p = spawn("python", [path.join(__dirname, "tts.py"), jf, VOICE, "--voice", script.voice, "--rate", script.rate, "--concurrency", "6"], { stdio: "inherit" });
     p.on("close", c => c === 0 ? res() : rej(new Error("tts failed")));
   });
 }
 
 // ---------------------------------------------------------------- plan
 async function cmdPlan() {
-  const script = readJson(path.join(OUT, "script.json"));
-  const cacheF = path.join(TTS, "durations.json");
+  const { flat, X } = course();
+  fs.mkdirSync(VOICE, { recursive: true });
+  const cacheF = path.join(VOICE, "durations.json");
   const cache = fs.existsSync(cacheF) ? readJson(cacheF) : {};
-  const keys = [...new Set(script.segments.flatMap(s => s.chapters.flatMap(c => c.clips.map(k => k.key))))];
-  const todo = keys.filter(k => cache[k] == null);
-  const missing = keys.filter(k => !fs.existsSync(path.join(TTS, k + ".mp3")));
-  const partial = args.includes("--partial"); // allow planning while TTS is still running (pilot renders)
-  if (missing.length && !partial) throw new Error(`${missing.length} voice clips missing — run: node build.js tts`);
-  await pool(todo.filter(k => !missing.includes(k)), 8, async k => { cache[k] = await probeDuration(path.join(TTS, k + ".mp3")); });
-  const est = {};
-  script.segments.forEach(s => s.chapters.forEach(c => c.clips.forEach(k => { if (cache[k.key] == null) est[k.key] = k.text.length / 10.7; })));
+  const lessons = flat.filter(l => X.has(l.id));
+  const keys = [...new Set(lessons.flatMap(l => X.defs[l.id].beats.map(b => X.voiceKey(b.say))))];
+  const have = keys.filter(k => fs.existsSync(path.join(VOICE, k + ".mp3")));
+  await pool(have.filter(k => cache[k] == null), 8, async k => { cache[k] = +(await probeDuration(path.join(VOICE, k + ".mp3"))).toFixed(3); });
   writeJson(cacheF, cache);
-  if (missing.length) console.log(`plan: ${missing.length} clips not synthesized yet — using estimates (partial plan)`);
+  const missing = keys.length - have.length;
+  if (missing && !args.includes("--partial")) throw new Error(`${missing} voice clips missing — run: node build.js tts  (or plan --partial to use estimates)`);
   let t = 0;
-  const plans = script.segments.map(s => {
-    const p = planSegment(s, k => cache[k.key] != null ? cache[k.key] : est[k.key]);
+  const plans = lessons.map(l => {
+    const film = X.build(X.defs[l.id], k => cache[k] != null ? cache[k] : null);
+    const tm = X.timing(film);
+    const chapters = film.beats.map(b => ({
+      kind: "beat", sec: b.sec, start: +b.start.toFixed(3), dur: +b.dur.toFixed(3),
+      clips: b.say ? [{ key: b.key, text: X.speakText(b.say), at: +b.vat.toFixed(3), dur: +b.vd.toFixed(3) }] : []
+    }));
+    const p = {
+      id: segId(l), kind: "lesson", lesson: l.id, title: l.t, acc: l.acc, stage: l.stage.id, module: l.module.id, no: l.index,
+      total: tm.total, transition: 0, chapters, beats: film.beats.map(b => ({ key: b.key, vd: +b.vd.toFixed(3), measured: b.measured }))
+    };
     p.musicOffset = +(t % 64).toFixed(3);
     t += p.total;
     return p;
   });
   writeJson(path.join(OUT, "plan.json"), plans);
-  console.log(`plan: ${plans.length} segments, total ${hms(t)} (${(t / 60).toFixed(1)} min)`);
+  // The app reads the same durations, so its timeline matches the rendered videos exactly.
+  const d = {};
+  keys.forEach(k => { if (cache[k] != null) d[k] = cache[k]; });
+  const manifest = { voice: O.voice, rate: O.rate, base: "video/out/voice/", d };
+  fs.writeFileSync(path.join(ROOT, "explainer-voice.js"), "// Generated by `node video/build.js plan` — narration clip durations for the motion explainers.\nwindow.EXPLAINER_VOICE = " + JSON.stringify(manifest) + ";\n");
+  console.log(`plan: ${plans.length} explainers, total ${hms(t)} (${(t / 60).toFixed(1)} min)${missing ? `, ${missing} clips estimated` : ""}`);
   return plans;
 }
 
@@ -102,22 +125,18 @@ const loadPlans = () => readJson(path.join(OUT, "plan.json"));
 function select(plans, only) {
   if (!only) return plans;
   const want = only.split(",").map(s => s.trim()).filter(Boolean);
-  return plans.filter(p => want.some(w => p.id === w || p.lesson === w || p.stage === w || p.module === w || p.id.endsWith("-" + w)));
+  return plans.filter(p => want.some(w => p.id === w || p.lesson === w || p.stage === w || p.module === w));
 }
 
 // ---------------------------------------------------------------- stills (visual QA)
 async function cmdStills() {
   const { launch, openPage, stills } = require("./lib/render");
-  const plans = select(loadPlans(), positional.join(",") || "C1.1");
+  const plans = select(loadPlans(), positional.join(",") || "C2.2");
   const browser = await launch(O.scale);
   try {
     const ctx = await openPage(browser, O.scale);
     for (const p of plans) {
-      const times = [];
-      p.chapters.forEach((c, i) => {
-        times.push([`${String(i).padStart(2, "0")}-${c.kind}-end`, c.start + c.dur - 0.25]);
-        if (i > 0) times.push([`${String(i).padStart(2, "0")}-${c.kind}-trans`, c.start + p.transition * 0.5]);
-      });
+      const times = p.chapters.map((c, i) => [`${String(i).padStart(2, "0")}`, c.start + c.dur - 0.12]);
       if (opt("at")) opt("at").split(",").forEach(x => times.push([`t${x}`, +x]));
       const files = await stills(ctx, p, path.join(OUT, "stills", p.id), times);
       console.log(`${p.id}: ${files.length} stills → ${path.dirname(files[0])}`);
@@ -135,20 +154,12 @@ async function cmdRender() {
   const plans = select(loadPlans(), opt("only"));
   const reuse = !args.includes("--no-reuse"), minBattery = +opt("min-battery", 30);
 
-  // Three signatures per segment, from inputs read once now (the workers load the page now too):
-  //   ptag = timing (plan minus music offset) · vsig = everything the pixels depend on · asig = the sound.
-  // vsig includes the lesson's own data + enrichment, so editing one lesson re-renders only that lesson.
+  // ptag = timing · vsig = everything the pixels depend on (engine, page, this lesson's own script) · asig = sound
   const read = files => files.map(f => fs.readFileSync(path.join(__dirname, f), "utf8"));
-  const VFILES = read(["page/arscenes.js", "page/stage.js", "page/render.html", "../scenes.js", "../motion.js", "lib/render.js"]);
+  const VFILES = read(["../explainer.js", "page/explain.html", "lib/render.js"]);
   const AFILES = read(["lib/audio.js"]);
-  const course = loadCourse(), byId = Object.fromEntries(course.flat.map(l => [l.id, l]));
-  const content = p => {
-    const l = p.kind === "lesson" && byId[p.lesson];
-    if (!l) return null; // cards draw only from their plan data
-    const { stage, module, next, index, ...own } = l;
-    let enr; try { enr = course.enrich(l); } catch (e) { enr = String(e); }
-    return [own, enr, stage.id, stage.t, module.id, module.t];
-  };
+  const { X, flat } = course(), byId = Object.fromEntries(flat.map(l => [l.id, l]));
+  const content = p => [X.defs[p.lesson].beats.map(b => [b.say, b.eq, b.sec, b.hold, b.min, b.do ? String(b.do) : null]), byId[p.lesson].t];
   const sigs = new Map(plans.map(p => {
     const ptag = ptagOf(p);
     return [p.id, { ptag, vsig: hash([ptag, content(p), O.fps, O.scale, O.crf, O.encoder, O.quality, VFILES]), asig: hash([ptag, p.musicOffset, AFILES]) }];
@@ -156,7 +167,6 @@ async function cmdRender() {
   const mp4Of = p => path.join(SEG, p.id + ".mp4");
   const metaOf = p => { try { return readJson(path.join(SEG, p.id + ".json")); } catch (_) { return null; } };
 
-  // Leftovers of an interrupted run (encoder temp files, unmixed tracks).
   for (const f of fs.readdirSync(SEG)) if (/\.part\.mp4$|\.video\.mp4$|\.wav$/.test(f)) try { fs.unlinkSync(path.join(SEG, f)); } catch (_) { }
 
   const audioQ = [], checkQ = [], renderQ = [];
@@ -168,10 +178,10 @@ async function cmdRender() {
     else if (reuse && m.ptag === s.ptag) checkQ.push(p);
     else renderQ.push(p);
   }
-  const byLen = (a, b) => b.total - a.total; // longest first
+  const byLen = (a, b) => b.total - a.total;
   renderQ.sort(byLen);
   let totalSec = renderQ.reduce((a, p) => a + p.total, 0);
-  console.log(`render: ${plans.length} segments: ${upToDate} up to date, ${audioQ.length} audio-only, ${checkQ.length} to verify against the current page, ` +
+  console.log(`render: ${plans.length} explainers: ${upToDate} up to date, ${audioQ.length} audio-only, ${checkQ.length} to verify, ` +
     `${renderQ.length} to render (${hms(totalSec)} of video) with ${O.workers} workers`);
   if (!audioQ.length && !checkQ.length && !renderQ.length) return;
 
@@ -179,14 +189,13 @@ async function cmdRender() {
   const gate = power.powerGate(minBattery, console.log);
   const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-  // Mix the audio, mux it with `videoSrc` (a fresh video track or the existing mp4), write subtitles + sidecar.
   const finish = async (p, videoSrc, frames) => {
     const wav = path.join(SEG, p.id + ".wav"), tmp = path.join(SEG, p.id + ".mux.part.mp4");
-    await mixSegment(p, TTS, wav, frames, O.fps);
+    await mixSegment(p, VOICE, wav, frames, O.fps);
     await run(FFMPEG, ["-y", "-v", "error", "-i", videoSrc, "-i", wav, "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-af", MASTER_AF, "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", tmp]);
     await R.renameRetry(tmp, mp4Of(p));
     fs.unlinkSync(wav);
-    fs.writeFileSync(path.join(SEG, p.id + ".srt"), toSrt(segmentCues(p, TTS)));
+    fs.writeFileSync(path.join(SEG, p.id + ".srt"), "\uFEFF" + toSrt(segmentCues(p, VOICE)));
     writeJson(path.join(SEG, p.id + ".json"), { id: p.id, frames, fps: O.fps, duration: frames / O.fps, ...sigs.get(p.id) });
   };
 
@@ -236,8 +245,8 @@ async function cmdRender() {
             const msg = e.message.split("\n")[0];
             if (attempt >= 5) { failed.push(p.id); console.error(`  [w${w}] ${p.id} FAILED after ${attempt} attempts: ${msg}`); break; }
             console.error(`  [w${w}] ${p.id} attempt ${attempt} failed (${msg}) - restarting the browser and retrying`);
-            await gate(); // a sleep on battery shows up as a timeout: wait for power before retrying
-            await sleep([5, 20, 60, 120][attempt - 1] * 1000); // also rides out a brief network loss (web fonts)
+            await gate();
+            await sleep([5, 20, 60, 120][attempt - 1] * 1000);
             if (kind !== "audio") { try { await restart(); } catch (e2) { console.error(`  [w${w}] browser restart failed: ${e2.message.split("\n")[0]}`); } }
           }
         }
@@ -248,29 +257,24 @@ async function cmdRender() {
     await Promise.all(Array.from({ length: Math.max(1, Math.min(O.workers, audioQ.length + checkQ.length + renderQ.length)) }, (_, i) => worker(i + 1)));
   } finally { power.stopPower(); }
   console.log(`render: done in ${hms((Date.now() - t0) / 1000)} - ${stats.rendered} rendered, ${stats.kept} kept after verification, ${stats.remixed} audio remixed`);
-  if (failed.length) throw new Error(`${failed.length} segments failed: ${failed.join(", ")} - run the same command again to retry them`);
+  if (failed.length) throw new Error(`${failed.length} explainers failed: ${failed.join(", ")} - run the same command again to retry them`);
 }
 
 // ---------------------------------------------------------------- assemble
 async function concatTo(list, outFile, title) {
   const tmp = path.join(OUT, "tmp-" + path.basename(outFile, ".mp4"));
   fs.mkdirSync(tmp, { recursive: true });
-  let t = 0, srt = [], chapters = [], pendingStart = null;
+  let t = 0;
+  const srt = [], chapters = [];
   for (const p of list) {
     const meta = readJson(path.join(SEG, p.id + ".json"));
-    segmentCues(p, TTS).forEach(c => srt.push({ ...c, start: c.start + t, end: c.end + t }));
-    if (p.kind === "module") pendingStart = pendingStart == null ? t : pendingStart;
-    else {
-      const start = pendingStart != null ? pendingStart : t;
-      pendingStart = null;
-      const name = p.kind === "lesson" ? `${p.lesson} · ${p.title[1]}` : p.title[1];
-      chapters.push({ start, name });
-    }
+    segmentCues(p, VOICE).forEach(c => srt.push({ ...c, start: c.start + t, end: c.end + t }));
+    chapters.push({ start: t, name: `${p.lesson} · ${p.title[1]}` });
     t += meta.duration;
   }
   chapters.forEach((c, i) => { c.end = i + 1 < chapters.length ? chapters[i + 1].start : t; });
   const listF = path.join(tmp, "list.txt"), srtF = outFile.replace(/\.mp4$/, ".srt"), metaF = path.join(tmp, "meta.txt");
-  fs.writeFileSync(listF, list.map(p => `file '${path.join(SEG, p.id + ".mp4").replace(/\\/g, "/").replace(/'/g, "'\\''")}'`).join("\n"));
+  fs.writeFileSync(listF, list.map(p => `file '${path.join(SEG, p.id + ".mp4").split(path.sep).join("/").replace(/'/g, "'\\''")}'`).join("\n"));
   fs.writeFileSync(srtF, "\uFEFF" + toSrt(srt));
   const esc = s => s.replace(/([=;#\\\n])/g, "\\$1");
   fs.writeFileSync(metaF, ";FFMETADATA1\ntitle=" + esc(title) + "\n" + chapters.map(c =>
@@ -280,15 +284,12 @@ async function concatTo(list, outFile, title) {
     "-c", "copy", "-c:s", "mov_text", "-metadata:s:s:0", "language=ara", "-metadata:s:a:0", "language=ara", "-movflags", "+faststart", outFile]);
   const chapterTxt = chapters.map(c => `${hms(c.start)} ${c.name}`).join("\n") + "\n";
   fs.writeFileSync(outFile.replace(/\.mp4$/, ".chapters.txt"), chapterTxt);
-  const lessons = list.filter(p => p.kind === "lesson").length;
   fs.writeFileSync(outFile.replace(/\.mp4$/, ".youtube.txt"),
-    `${title}\n\nشرح عربي كامل بالرسوم المتحركة: ${lessons} درسًا، ولكل درس تشبيه ومخطط مرئي ونقاط أساسية وأمثلة بالكود وخطأ شائع واختبار سريع.\n\nالفصول:\n${chapterTxt}`);
+    `${title}\n\nشرح عربي بالرسوم المتحركة لـ ${list.length} درسًا: لكل درس صورة واحدة تتطور خطوة بخطوة مع تعليق صوتي ومعادلة مختصرة لكل فكرة.\n\nالفصول:\n${chapterTxt}`);
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log(`  ${path.basename(outFile)}  ${hms(t)}  (${chapters.length} chapters)`);
 }
 
-// A segment is finished once its .json sidecar exists (written after the mp4 is complete) and was
-// rendered with the current timing — otherwise subtitles and chapters would drift.
 const isDone = p => {
   const f = path.join(SEG, p.id + ".json");
   return fs.existsSync(f) && fs.existsSync(path.join(SEG, p.id + ".mp4")) && readJson(f).ptag === ptagOf(p);
@@ -298,21 +299,21 @@ async function cmdAssemble() {
   const all = loadPlans();
   if (args.includes("--partial")) {
     const done = all.filter(isDone);
-    if (!done.length) throw new Error("no segments rendered yet");
-    console.log(`assemble --partial: ${done.length}/${all.length} segments`);
-    return concatTo(done, path.join(OUT, "preview.mp4"), "معاينة — كورس مهندس الذكاء الاصطناعي");
+    if (!done.length) throw new Error("no explainers rendered yet");
+    console.log(`assemble --partial: ${done.length}/${all.length} explainers`);
+    return concatTo(done, path.join(OUT, "preview.mp4"), "معاينة — شرح الموشن لكورس مهندس الذكاء الاصطناعي");
   }
-  const plans = all;
-  const missing = plans.filter(p => !isDone(p));
-  if (missing.length) throw new Error(`${missing.length} segments not rendered yet (e.g. ${missing.slice(0, 3).map(p => p.id).join(", ")})`);
+  const missing = all.filter(p => !isDone(p));
+  if (missing.length) throw new Error(`${missing.length} explainers not rendered yet (e.g. ${missing.slice(0, 3).map(p => p.id).join(", ")})`);
   console.log("assemble:");
-  const stages = [...new Set(plans.map(p => p.stage).filter(Boolean))];
+  const stages = [...new Set(all.map(p => p.stage))];
   fs.mkdirSync(path.join(OUT, "stages"), { recursive: true });
+  const { COURSE } = course(), stTitle = Object.fromEntries(COURSE.stages.map(s => [s.id, s.t]));
   for (const [i, st] of stages.entries()) {
-    const list = plans.filter(p => p.stage === st);
-    await concatTo(list, path.join(OUT, "stages", `${String(i).padStart(2, "0")}-${st}.mp4`), list[0].title[1]);
+    const list = all.filter(p => p.stage === st);
+    await concatTo(list, path.join(OUT, "stages", `${String(i).padStart(2, "0")}-${st}.mp4`), (stTitle[st] || [st, st])[1]);
   }
-  await concatTo(plans, path.join(OUT, "AI-Engineer-Course-Arabic.mp4"), "كورس مهندس الذكاء الاصطناعي — الشرح الكامل بالعربية");
+  await concatTo(all, path.join(OUT, "AI-Engineer-Motion-Explainers-Arabic.mp4"), "كورس مهندس الذكاء الاصطناعي — شرح الموشن بالعربية");
 }
 
 // ---------------------------------------------------------------- main
@@ -324,7 +325,9 @@ async function cmdAssemble() {
     else if (cmd === "stills") await cmdStills();
     else if (cmd === "render") await cmdRender();
     else if (cmd === "assemble") await cmdAssemble();
-    else if (cmd === "all") { cmdScript(); await cmdTts(); await cmdPlan(); await cmdRender(); await cmdAssemble(); }
-    else console.log(fs.readFileSync(__filename, "utf8").split("\n").slice(1, 14).map(l => l.replace(/^\/\/ ?/, "")).join("\n"));
+    else if (cmd === "all") { await cmdTts(); await cmdPlan(); await cmdRender(); await cmdAssemble(); }
+    else console.log(fs.readFileSync(__filename, "utf8").split("\n").slice(1, 15).map(l => l.replace(/^\/\/ ?/, "")).join("\n"));
   } catch (e) { console.error(e.stack || e.message); process.exit(1); }
 })();
+
+module.exports = { EXPLAINER_FILES };

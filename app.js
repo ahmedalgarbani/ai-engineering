@@ -23,10 +23,7 @@
   // v2 key: the redesign starts everyone on the bright theme once; the toggle still persists.
   let theme = store.get("aie-theme-v2", "light");
   let slideTheme = store.get("aie-stheme", "light");
-  let motionMode = store.get("aie-mmode", "full");
-  let sfxOn = store.get("aie-sfx", true);
-  let ttsOn = store.get("aie-tts-v2", true);
-  let subMode = store.get("aie-sub", "both"); // both | ar | en
+  let xpVoice = store.get("aie-xp-voice", true);
   let filter = "all";
   let tab = store.get("aie-tab", "slides");
   const cleanups = [];
@@ -234,7 +231,7 @@
     const mi = l.module.lessons.indexOf(l) + 1;
     const tabsList = [
       ["slides", AR() ? "الشرائح" : "Slides"],
-      ["motion", AR() ? "الفيديو" : "Video"],
+      ["motion", AR() ? "شرح بالموشن" : "Motion explainer"],
       ["image", AR() ? "الملخص والصور" : "Summary & visuals"],
       ["ar", AR() ? "الشرح بالعربي" : "Arabic guide"],
       ["en", AR() ? "الشرح بالإنجليزي" : "English guide"]
@@ -486,256 +483,23 @@
     show(0);
   }
 
-  // ---------- Motion Video Studio (Full Fun Explainer + Quick Recap + SFX + Neural Voiceover) ----------
+  // ---------- Motion Explainer (3Blue1Brown-style: one evolving picture + caption + formula + Arabic voice) ----------
   function motion(l, next, p) {
-    const { chapters: C, total } = buildChapters(l, next, src(l), motionMode);
-    p.innerHTML = `
-      <div class="motion-head">
-        <div class="mode-switch" id="mMode">
-          <button data-m="full" class="${motionMode === "full" ? "on" : ""}">🎬 ${AR() ? "فيديو الشرح الممتع الطويل" : "Full Fun Explainer"} (${motionMode === "full" ? fmt(total) : "~1:45"})</button>
-          <button data-m="quick" class="${motionMode === "quick" ? "on" : ""}">⚡ ${AR() ? "ملخص سريع" : "Quick Recap"} (~0:45)</button>
-        </div>
-        <div class="motion-toggles">
-          <button id="sfxBtn" class="${sfxOn ? "on" : ""}">${sfxOn ? "🔊" : "🔇"} ${AR() ? "مؤثرات" : "SFX"}</button>
-          <button id="ttsBtn" class="${ttsOn ? "on" : ""}">${ttsOn ? "🎙️" : "🔇"} ${AR() ? "تعليق صوتي طبيعي" : "Neural Voice"}</button>
-          <button id="subBtn">CC: ${subMode === "both" ? (AR() ? "ثنائي" : "EN+AR") : subMode.toUpperCase()}</button>
-        </div>
-      </div>
-      <div class="player" id="player">
-        <div class="screen" id="screen">
-          <div class="chap" id="chap"></div>
-          <div class="dur-badge">${motionMode === "full" ? (AR() ? "شرح كامل ممتع" : "FULL EXPLAINER") : (AR() ? "ملخص سريع" : "QUICK RECAP")} · ${fmt(total)}</div>
-          <div class="big" id="big"><span>▶</span></div>
-        </div>
-        <div class="caps" id="caps"></div>
-        <div class="ctrl">
-          <button id="play" aria-label="Play or pause">⏸</button>
-          <button id="rep" aria-label="Replay">↺</button>
-          <div class="tl" id="tl">${C.map(c => `<div class="s" style="flex:${c.dur}" title="${esc(T(c.name))}"><i></i></div>`).join("")}</div>
-          <span class="time" id="time"></span>
-          <button id="spd">1×</button>
-          <button id="fsv" aria-label="Fullscreen">⛶</button>
-        </div>
-        <div class="chapters" id="chs">${C.map((c, i) => `<button data-i="${i}"><small>${fmt(c.start)} · ${Math.round(c.dur)}s</small>${esc(T(c.name))}</button>`).join("")}</div>
-      </div>
-      <p style="font-size:12.5px;color:var(--muted);margin-top:10px">${AR()
-        ? `فيديو موشن تفاعلي مدته ${fmt(total)} مقسم إلى ${C.length} مشاهد مع تعليق صوتي عصبي متزامن لا ينقطع: مقدمة وتشويق، قصة وتشبيه، معمارية متحركة، شرح النقاط، ${l.ex ? "كود عملي، " : ""}خطأ شائع ونصيحة خبير، تحدي فهم سريع، وخلاصة.`
-        : `A ${fmt(total)} multi-act animated motion explainer across ${C.length} scenes with synced voiceover: hook, analogy story, live visual architecture, deep-dive points, ${l.ex ? "animated code walkthrough, " : ""}mistake vs pro tip, interactive brain check, and grand recap.`}</p>`;
-
-    const screen = $("#screen"), segs = [...p.querySelectorAll(".tl .s i")], chs = [...p.querySelectorAll("#chs button")];
-    let t = 0, playing = true, speed = 1, cur = -1, svg = null, last = performance.now(), raf;
-    const speeds = [1, 1.25, 1.5, 2, 0.75];
-
-    // Synced Neural Audio + Natural SpeechSynthesis Fallback (never cuts off mid-sentence)
-    let activeAudio = null, audioBusy = false, audioToken = 0, quizTimer = null;
-    const preloaded = {};
-    function preloadChapter(ci) {
-      const ch = C[ci];
-      if (!ch || !ch.clips) return;
-      ch.clips.forEach(cl => {
-        if (!preloaded[cl.k]) {
-          const a = new Audio("video/out/tts/" + cl.k + ".mp3");
-          a.preload = "auto";
-          preloaded[cl.k] = a;
-        }
-      });
+    if (!window.Explainer || !Explainer.has(l.id)) {
+      p.innerHTML = `<div class="xp-missing">${AR() ? "شرح الموشن لهذا الدرس قيد الإعداد." : "The motion explainer for this lesson is not ready yet."}</div>`;
+      return;
     }
-    function stopAudio() {
-      audioToken++;
-      audioBusy = false;
-      if (quizTimer) { clearTimeout(quizTimer); quizTimer = null; }
-      if (activeAudio) {
-        try { activeAudio.pause(); activeAudio.onended = null; activeAudio.onerror = null; } catch (e) { }
-        activeAudio = null;
-      }
-      try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) { }
-    }
-    function pickBestVoice(langPrefix) {
-      if (!window.speechSynthesis) return null;
-      const voices = window.speechSynthesis.getVoices() || [];
-      const matching = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith(langPrefix));
-      return matching.find(v => /natural|neural|online|google|premium|enhanced/i.test(v.name)) || matching[0] || null;
-    }
-    function speakFallback(text, langPrefix, token) {
-      if (!window.speechSynthesis || !text) { audioBusy = false; return; }
-      try {
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        const v = pickBestVoice(langPrefix);
-        if (v) u.voice = v;
-        u.lang = langPrefix === "ar" ? "ar-SA" : "en-US";
-        u.rate = Math.min(1.6, speed);
-        u.pitch = 1.0;
-        const safety = setTimeout(() => { if (token === audioToken) audioBusy = false; }, Math.max(4000, text.length * 140 / speed));
-        u.onend = u.onerror = () => { clearTimeout(safety); if (token === audioToken) audioBusy = false; };
-        audioBusy = true;
-        window.speechSynthesis.speak(u);
-      } catch (e) { audioBusy = false; }
-    }
-    function playChapterAudio(ch) {
-      stopAudio();
-      if (!ttsOn || !playing) return;
-      const token = audioToken;
-      const useNeuralAr = (AR() || subMode !== "en") && ch.clips && ch.clips.length > 0;
-      if (!useNeuralAr) {
-        speakFallback(AR() ? ch.cap[1] : ch.cap[0], AR() ? "ar" : "en", token);
-        return;
-      }
-      audioBusy = true;
-      let idx = 0;
-      const playNext = () => {
-        if (token !== audioToken) return;
-        if (idx >= ch.clips.length) { audioBusy = false; return; }
-        const cl = ch.clips[idx++];
-        const a = new Audio("video/out/tts/" + cl.k + ".mp3");
-        a.playbackRate = speed;
-        activeAudio = a;
-        a.onended = () => {
-          if (token !== audioToken) return;
-          if (ch.kind === "quiz" && idx === 1 && ch.clips.length > 1) {
-            const pauseMs = Math.max(800, ((ch.quizPause || 3.5) * 1000) / speed);
-            quizTimer = setTimeout(playNext, pauseMs);
-          } else {
-            playNext();
-          }
-        };
-        a.onerror = () => {
-          if (token !== audioToken) return;
-          activeAudio = null;
-          speakFallback(AR() ? ch.cap[1] : ch.cap[0], AR() ? "ar" : "en", token);
-        };
-        a.play().catch(() => {
-          if (token !== audioToken) return;
-          // Autoplay blocked or file missing: fall back gracefully
-          speakFallback(AR() ? ch.cap[1] : ch.cap[0], AR() ? "ar" : "en", token);
-        });
-      };
-      playNext();
-    }
-
-    function renderCaps(cap) {
-      const box = $("#caps");
-      if (subMode === "en") box.innerHTML = `<div class="en f">${esc(cap[0])}</div>`;
-      else if (subMode === "ar") box.innerHTML = `<div class="ar f">${esc(cap[1])}</div>`;
-      else box.innerHTML = `<div class="en f">${esc(cap[0])}</div><div class="ar f">${esc(cap[1])}</div>`;
-    }
-
-    function mount(ci) {
-      if (svg) svg.remove();
-      const d = document.createElement("div"); d.innerHTML = C[ci].svg(); svg = d.firstChild;
-      screen.insertBefore(svg, screen.firstChild);
-      try { svg.pauseAnimations(); } catch (e) { }
-      const isTransition = cur !== -1;
-      cur = ci;
-      $("#chap").textContent = `${C[ci].name[0]} · ${C[ci].name[1]}`;
-      renderCaps(C[ci].cap);
-      chs.forEach((b, k) => b.classList.toggle("on", k === ci));
-      const activeCh = chs[ci];
-      if (activeCh) activeCh.scrollIntoView({ block: "nearest", inline: "nearest" });
-      if (isTransition && sfxOn && playing && window.MotionAudio) {
-        window.MotionAudio.chime(440 + (ci % 5) * 60);
-      }
-      preloadChapter(ci + 1);
-      if (playing) playChapterAudio(C[ci]);
-    }
-
-    function draw() {
-      let ci = C.findIndex(c => t < c.start + c.dur);
-      if (ci < 0) ci = C.length - 1;
-      if (ci !== cur) mount(ci);
-      try { svg.setCurrentTime(Math.min(t - C[ci].start, C[ci].dur)); } catch (e) { }
-      segs.forEach((s, k) => s.style.width = (t >= C[k].start + C[k].dur ? 100 : t <= C[k].start ? 0 : (t - C[k].start) / C[k].dur * 100) + "%");
-      $("#time").textContent = `${fmt(t)} / ${fmt(total)}`;
-    }
-
-    function loop(now) {
-      const dt = Math.min(0.1, (now - last) / 1000); last = now;
-      if (playing) {
-        const curCh = C[cur];
-        const chEnd = curCh ? curCh.start + curCh.dur : total;
-        if (audioBusy && t + dt * speed >= chEnd - 0.05) {
-          // Hold at end of current chapter until voiceover finishes — never cut off mid-sentence
-          t = chEnd - 0.05;
-        } else {
-          t += dt * speed;
-        }
-        if (t >= total) { t = total; setPlay(false); $("#big").classList.add("show"); }
-      }
-      draw();
-      raf = requestAnimationFrame(loop);
-    }
-    function setPlay(v) {
-      playing = v;
-      $("#play").textContent = v ? "⏸" : "▶";
-      if (v) {
-        $("#big").classList.remove("show");
-        if (activeAudio && activeAudio.paused && activeAudio.currentTime > 0 && !activeAudio.ended) {
-          activeAudio.play().catch(() => { });
-        } else if (ttsOn && cur >= 0 && !audioBusy) {
-          playChapterAudio(C[cur]);
-        }
-      } else {
-        if (activeAudio) try { activeAudio.pause(); } catch (e) { }
-        if (window.speechSynthesis) try { window.speechSynthesis.cancel(); } catch (e) { }
-      }
-    }
-    function seek(nt) {
-      t = Math.max(0, Math.min(total - 0.01, nt));
-      $("#big").classList.remove("show");
-      let ci = C.findIndex(c => t < c.start + c.dur);
-      if (ci < 0) ci = C.length - 1;
-      if (ci === cur && playing) playChapterAudio(C[ci]);
-      draw();
-    }
-
-    $("#mMode").onclick = e => {
-      const b = e.target.closest("button"); if (!b || b.dataset.m === motionMode) return;
-      motionMode = b.dataset.m; store.set("aie-mmode", motionMode);
-      pane(l, next);
-    };
-    $("#sfxBtn").onclick = () => {
-      sfxOn = !sfxOn; store.set("aie-sfx", sfxOn);
-      $("#sfxBtn").classList.toggle("on", sfxOn);
-      $("#sfxBtn").textContent = `${sfxOn ? "🔊" : "🔇"} ${AR() ? "مؤثرات" : "SFX"}`;
-      if (sfxOn && window.MotionAudio) window.MotionAudio.chime(587);
-    };
-    $("#ttsBtn").onclick = () => {
-      ttsOn = !ttsOn; store.set("aie-tts-v2", ttsOn);
-      $("#ttsBtn").classList.toggle("on", ttsOn);
-      $("#ttsBtn").textContent = `${ttsOn ? "🎙️" : "🔇"} ${AR() ? "تعليق صوتي طبيعي" : "Neural Voice"}`;
-      if (ttsOn && cur >= 0 && playing) playChapterAudio(C[cur]);
-      else stopAudio();
-    };
-    $("#subBtn").onclick = () => {
-      const order = ["both", "ar", "en"];
-      subMode = order[(order.indexOf(subMode) + 1) % order.length];
-      store.set("aie-sub", subMode);
-      $("#subBtn").textContent = `CC: ${subMode === "both" ? (AR() ? "ثنائي" : "EN+AR") : subMode.toUpperCase()}`;
-      if (cur >= 0) renderCaps(C[cur].cap);
-    };
-
-    $("#play").onclick = () => { if (!playing && t >= total) seek(0); setPlay(!playing); };
-    $("#big").onclick = () => { seek(0); setPlay(true); };
-    $("#rep").onclick = () => { seek(0); setPlay(true); };
-    $("#spd").onclick = () => {
-      speed = speeds[(speeds.indexOf(speed) + 1) % speeds.length];
-      $("#spd").textContent = speed + "×";
-      if (activeAudio) activeAudio.playbackRate = speed;
-    };
-    $("#tl").onclick = e => { const r = e.currentTarget.getBoundingClientRect(); seek((e.clientX - r.left) / r.width * total); };
-    $("#chs").onclick = e => { const b = e.target.closest("button"); if (b) { seek(C[+b.dataset.i].start); setPlay(true); } };
-    $("#fsv").onclick = () => { const d = $("#player"); try { document.fullscreenElement ? document.exitFullscreen() : d.requestFullscreen().catch(() => { }); } catch (e) { } };
-    const key = e => {
-      if (e.target.tagName === "INPUT") return;
-      if (e.key === " ") { e.preventDefault(); $("#play").click(); }
-      if (e.key === "ArrowRight") seek(t + 5);
-      if (e.key === "ArrowLeft") seek(t - 5);
-    };
-    document.addEventListener("keydown", key);
-    raf = requestAnimationFrame(loop);
-    cleanups.push(() => { stopAudio(); cancelAnimationFrame(raf); document.removeEventListener("keydown", key); });
+    const host = document.createElement("div");
+    p.appendChild(host);
+    const pl = Explainer.player(host, l, { ar: AR(), acc: l.acc, voice: xpVoice, onVoice: v => { xpVoice = v; store.set("aie-xp-voice", v); } });
+    const intro = document.createElement("p");
+    intro.className = "xp-intro";
+    intro.textContent = AR()
+      ? `شرح بصري متحرك للدرس خطوة بخطوة: صورة واحدة تتطور أمامك مع تعليق صوتي عربي ومعادلة مختصرة لكل فكرة. ${pl.film.secs.length} أقسام · ${pl.film.beats.length} خطوة.`
+      : `A step-by-step animated explanation: one picture that evolves with Arabic narration and a short formula for each idea. ${pl.film.secs.length} sections · ${pl.film.beats.length} steps.`;
+    p.appendChild(intro);
+    cleanups.push(() => pl.destroy());
   }
-  const fmt = s => { s = Math.max(0, s); return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`; };
 
   // ---------- Lesson Summary Image & Illustrative Images Gallery ----------
   function poster(l, p) {

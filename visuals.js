@@ -16,6 +16,78 @@
   const FA = "Readex Pro, IBM Plex Sans Arabic, sans-serif";
   const FM = "IBM Plex Mono, monospace";
 
+  // Analogy art + code file names (moved here from the retired motion.js player)
+  // Stylized animated geometric icon illustrations for the Fun Story / Analogy Act
+  function metaphorArt(kind, acc) {
+    const cx = 196, cy = 265;
+    const ring = `<circle cx="${cx}" cy="${cy}" r="118" fill="${acc}" opacity=".09"><animate attributeName="r" values="110;126;110" dur="4s" repeatCount="indefinite"/></circle>
+      <circle cx="${cx}" cy="${cy}" r="94" fill="none" stroke="${acc}" stroke-width="2" stroke-dasharray="8 10" opacity=".45">
+        <animateTransform attributeName="transform" type="rotate" from="0 ${cx} ${cy}" to="360 ${cx} ${cy}" dur="20s" repeatCount="indefinite"/>
+      </circle>`;
+    const glyphs = {
+      brain: `<g transform="translate(${cx},${cy})">
+        <circle r="54" fill="#13253d" stroke="${acc}" stroke-width="3"/>
+        <circle cx="-18" cy="-12" r="14" fill="none" stroke="#3db4f2" stroke-width="3"/>
+        <circle cx="18" cy="-12" r="14" fill="none" stroke="${acc}" stroke-width="3"/>
+        <circle cx="0" cy="18" r="14" fill="none" stroke="#4fd1a5" stroke-width="3"/>
+        <line x1="-8" y1="-8" x2="8" y2="-8" stroke="#fff" stroke-width="2"/>
+        <line x1="-12" y1="0" x2="-4" y2="12" stroke="#fff" stroke-width="2"/>
+        <line x1="12" y1="0" x2="4" y2="12" stroke="#fff" stroke-width="2"/>
+      </g>`,
+      library: `<g transform="translate(${cx},${cy})">
+        <rect x="-56" y="-44" width="112" height="88" rx="12" fill="#13253d" stroke="${acc}" stroke-width="3"/>
+        <line x1="0" y1="-44" x2="0" y2="44" stroke="${acc}" stroke-width="2.5"/>
+        <rect x="-42" y="-26" width="30" height="6" rx="3" fill="#3db4f2"/>
+        <rect x="-42" y="-10" width="24" height="6" rx="3" fill="#cbd5e1" opacity=".7"/>
+        <rect x="-42" y="6" width="28" height="6" rx="3" fill="#cbd5e1" opacity=".5"/>
+        <rect x="12" y="-26" width="30" height="6" rx="3" fill="${acc}"/>
+        <rect x="12" y="-10" width="26" height="6" rx="3" fill="#4fd1a5"/>
+        <rect x="12" y="6" width="20" height="6" rx="3" fill="#cbd5e1" opacity=".5"/>
+      </g>`,
+      chef: `<g transform="translate(${cx},${cy})">
+        <circle r="56" fill="#13253d" stroke="${acc}" stroke-width="3"/>
+        <path d="M-26,8 A26,26 0 1,1 26,8" fill="none" stroke="${acc}" stroke-width="5" stroke-linecap="round"/>
+        <path d="M26,-8 A26,26 0 1,1 -26,-8" fill="none" stroke="#4fd1a5" stroke-width="5" stroke-linecap="round"/>
+        <circle r="10" fill="#ffffff"/>
+      </g>`,
+      shield: `<g transform="translate(${cx},${cy})">
+        <path d="M0,-62 L52,-40 L52,10 C52,42 26,60 0,70 C-26,60 -52,42 -52,10 L-52,-40 Z" fill="#13253d" stroke="${acc}" stroke-width="3.5"/>
+        <path d="M-18,4 L-4,18 L24,-16" fill="none" stroke="#4fd1a5" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>`,
+      rocket: `<g transform="translate(${cx},${cy})">
+        <path d="M0,-64 C28,-38 30,8 22,34 L-22,34 C-30,8 -28,-38 0,-64 Z" fill="#13253d" stroke="${acc}" stroke-width="3"/>
+        <circle cx="0" cy="-12" r="13" fill="#3db4f2"/>
+        <path d="M-22,22 L-42,42 L-18,38 Z M22,22 L42,42 L18,38 Z" fill="${acc}"/>
+        <path d="M-10,36 L0,64 L10,36 Z" fill="#f5a524"><animate attributeName="opacity" values="1;.45;1" dur=".45s" repeatCount="indefinite"/></path>
+      </g>`,
+      bolt: `<g transform="translate(${cx},${cy})">
+        <circle r="56" fill="#13253d" stroke="${acc}" stroke-width="2.5"/>
+        <polygon points="8,-44 -28,6 -2,6 -12,46 30,-6 4,-6" fill="${acc}"/>
+      </g>`,
+      compass: `<g transform="translate(${cx},${cy})">
+        <circle r="56" fill="#13253d" stroke="${acc}" stroke-width="3"/>
+        <polygon points="0,-42 12,0 0,10 -12,0" fill="${acc}"/>
+        <polygon points="0,42 12,0 0,-10 -12,0" fill="#3db4f2" opacity=".7"/>
+        <circle r="6" fill="#fff"/>
+      </g>`,
+      radar: `<g transform="translate(${cx},${cy})">
+        <circle r="56" fill="#13253d" stroke="${acc}" stroke-width="2.5"/>
+        <circle r="36" fill="none" stroke="${acc}" stroke-opacity=".45" stroke-width="1.5"/>
+        <circle r="16" fill="none" stroke="${acc}" stroke-opacity=".45" stroke-width="1.5"/>
+        <line x1="0" y1="0" x2="40" y2="-32" stroke="#4fd1a5" stroke-width="3">
+          <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="3.5s" repeatCount="indefinite"/>
+        </line>
+        <circle cx="24" cy="-18" r="5" fill="#4fd1a5"/>
+      </g>`,
+      code: `<g transform="translate(${cx},${cy})">
+        <rect x="-58" y="-44" width="116" height="88" rx="14" fill="#13253d" stroke="${acc}" stroke-width="3"/>
+        <text x="0" y="10" text-anchor="middle" font-family="${FM}" font-size="34" font-weight="700" fill="${acc}">&lt;/&gt;</text>
+      </g>`
+    };
+    return ring + (glyphs[kind] || glyphs.rocket);
+  }
+  function langOf(ex) { return /SELECT|CREATE|WITH /.test(ex) ? "query.sql" : /const |=>|z\.object/.test(ex) ? "example.ts" : /\{\{|<policy>/.test(ex) ? "prompt.xml" : /services:\n|helm|values\.yaml/.test(ex) ? "docker-compose.yml" : /^\s*\{[\s\S]*"\w+":/.test(ex) ? "config.json" : /docker run|vllm|git worktree|run:/.test(ex) ? "deploy.sh" : "example.py"; }
+
   // 1. High-Res Lesson Summary Card Image (1200x840 SVG)
   function buildLessonSummarySVG(l, enr, lang) {
     const W = 1200, H = 840, acc = l.acc || "#3db4f2";
@@ -142,7 +214,7 @@
     if (enr) {
       const anaEn = wrap(enr.analogy[0], 36).slice(0, 4);
       const anaAr = wrap(enr.analogy[1], 42).slice(0, 4);
-      const art = window.MotionKit ? window.MotionKit.metaphorArt(enr.icon, acc) : "";
+      const art = metaphorArt(enr.icon, acc);
       const anaSvg = `<svg viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
         ${window.SceneKit ? window.SceneKit.bg(acc, "ana" + l.id.replace(/\W/g, "")) : `<rect width="960" height="540" fill="#07101e"/>`}
         ${art}
@@ -195,7 +267,7 @@
       const lines = l.ex.split("\n").slice(0, 14);
       const fs = lines.length > 9 ? 15 : 17, lh = fs * 1.6;
       const h = Math.min(448, 76 + lines.length * lh + 24), y0 = (540 - h) / 2;
-      const langName = window.MotionKit ? window.MotionKit.langOf(l.ex) : "example.py";
+      const langName = langOf(l.ex);
       const codeSvg = `<svg viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
         ${window.SceneKit ? window.SceneKit.bg(acc, "cd" + l.id.replace(/\W/g, "")) : `<rect width="960" height="540" fill="#07101e"/>`}
         <rect x="64" y="${y0}" width="832" height="${h}" rx="16" fill="#0a1524" stroke="#26405e" stroke-width="1.8"/>

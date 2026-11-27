@@ -130,7 +130,7 @@ async function mixSegment(plan, ttsDir, outWav, frames, fps) {
 
   // transitions + cues
   plan.chapters.forEach((c, i) => {
-    if (i > 0) addAt(L, R, SFX.whoosh[i % 3], c.start - 0.12, 0.2);
+    if (i > 0 && (c.sec || c.kind !== "beat")) addAt(L, R, SFX.whoosh[i % 3], c.start - 0.12, c.kind === "beat" ? 0.13 : 0.2); // explainers: only at section starts
     if (c.kind === "quiz") {
       const n = Math.max(1, Math.round(c.extra.reveal - c.extra.countFrom));
       for (let k = 0; k < n; k++) addAt(L, R, SFX.tick, c.start + c.extra.countFrom + k * ((c.extra.reveal - c.extra.countFrom) / n), 1);

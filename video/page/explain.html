@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="utf-8">
+<title>Motion explainer renderer</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=block" rel="stylesheet">
+<style>
+  html, body { margin: 0; width: 960px; height: 540px; overflow: hidden; background: #0b0f14; }
+  #root { position: relative; width: 960px; height: 540px; overflow: hidden; }
+  #warm { position: absolute; left: -50px; top: -50px; width: 10px; height: 10px; overflow: hidden; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<div id="warm"></div>
+<script src="../../data0.js"></script>
+<script src="../../data1.js"></script>
+<script src="../../data2.js"></script>
+<script src="../../data3.js"></script>
+<script src="../../data4.js"></script>
+<script src="../../data5.js"></script>
+<script src="../../agentic.js"></script>
+<script src="../../explainer.js"></script>
+<script src="../../explainers/c.js"></script>
+<script src="../../explainers/s1.js"></script>
+<script src="../../explainers/s2.js"></script>
+<script src="../../explainers/s3.js"></script>
+<script src="../../explainers/s4.js"></script>
+<script src="../../explainers/s5.js"></script>
+<script src="../../explainers/s6.js"></script>
+<script src="../../explainers/s7.js"></script>
+<script src="../../explainers/s8.js"></script>
+<script>
+// Deterministic driver for the video pipeline:
+//   Renderer.ready            → font load report
+//   Renderer.prepare(plan)    → builds the lesson film with the plan's measured voice durations
+//   Renderer.seek(t)          → poses the frame at t seconds
+(function () {
+  const X = window.Explainer, byId = {};
+  const ACC = { C: "#f5a524", S1: "#3db4f2", S2: "#22c3a6", S3: "#f2795b", S4: "#e8618c", S5: "#9ccc65", S6: "#a855f7", S7: "#06b6d4", S8: "#6366f1" };
+  (window.COURSE ? COURSE.stages : []).forEach(st => st.modules.forEach(m => m.lessons.forEach(l => { l.acc = ACC[st.id]; byId[l.id] = l; })));
+  let stage = null;
+  async function fontsReady() {
+    const specs = ['400 20px "KaTeX_Main"', 'italic 400 20px "KaTeX_Math"', '400 20px "KaTeX_Size1"', '400 20px "KaTeX_AMS"', '700 20px "KaTeX_Main"'];
+    for (const w of ["400", "500", "600", "700"]) specs.push(`${w} 20px "IBM Plex Sans Arabic"`, `${w} 20px "IBM Plex Mono"`);
+    specs.push('600 20px "Outfit"');
+    await Promise.all(specs.map(s => document.fonts.load(s, "مرحبًا Hello x∑")));
+    await document.fonts.ready;
+    document.getElementById("warm").innerHTML = (window.katex ? katex.renderToString("q_i = W_Q x_i \\sum \\frac{a}{b} \\sqrt{d} \\mathbb{R}") : "") + '<svg width="10" height="10"><text font-family="IBM Plex Sans Arabic">النموذج Model ✓</text><text font-family="KaTeX_Main">The cake</text></svg>';
+    const r = Object.fromEntries(specs.map(s => [s, document.fonts.check(s, "Hello")]));
+    r.katex = !!window.katex;
+    return r;
+  }
+  function prepare(plan) {
+    const root = document.getElementById("root");
+    root.innerHTML = "";
+    const d = {};
+    (plan.beats || []).forEach(b => { if (b.vd != null && b.measured !== false) d[b.key] = b.vd; });
+    const def = X.defs[plan.lesson];
+    if (!def) throw new Error("no explainer for " + plan.lesson);
+    const film = X.build(def, k => d[k] != null ? d[k] : null);
+    const l = byId[plan.lesson];
+    stage = X.mount(film, root, { acc: plan.acc || (l && l.acc), chip: plan.chip === false ? null : [plan.lesson, l ? l.t[1] : ""] });
+    const tm = X.timing(film);
+    if (plan.total != null && Math.abs(tm.total - plan.total) > 0.01) throw new Error(`timing drift for ${plan.lesson}: page ${tm.total} vs plan ${plan.total}`);
+    return tm;
+  }
+  // QA helper: build with estimated or given durations, no plan needed
+  function preview(id, durations) {
+    return prepare(Object.assign({ lesson: id }, { beats: Object.entries(durations || {}).map(([key, vd]) => ({ key, vd })) }));
+  }
+  window.Renderer = { ready: fontsReady(), prepare, preview, seek: t => stage.seek(t) };
+})();
+</script>
+</body>
+</html>
