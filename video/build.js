@@ -51,7 +51,7 @@ function cmdScript() {
   const missing = flat.filter(l => !X.has(l.id)).map(l => l.id);
   const segments = flat.filter(l => X.has(l.id)).map(l => ({
     id: segId(l), lesson: l.id, title: l.t, acc: l.acc, stage: l.stage.id, module: l.module.id,
-    beats: X.defs[l.id].beats.map(b => ({ say: X.speakText(b.say), key: X.voiceKey(b.say), sec: b.sec || null }))
+    beats: X.defs[l.id].beats.map(b => ({ say: X.speakText(b.say), tts: X.ttsText(b.say), key: X.voiceKey(b.say), sec: b.sec || null }))
   }));
   const script = { voice: O.voice, rate: O.rate, segments };
   writeJson(path.join(OUT, "script.json"), script);
@@ -72,12 +72,12 @@ function cmdScript() {
 function cmdTts() {
   const script = cmdScript();
   const seen = new Set(), jobs = [];
-  script.segments.forEach(s => s.beats.forEach(b => { if (b.say && !seen.has(b.key)) { seen.add(b.key); jobs.push({ key: b.key, text: b.say }); } }));
+  script.segments.forEach(s => s.beats.forEach(b => { if (b.say && !seen.has(b.key)) { seen.add(b.key); jobs.push({ key: b.key, text: b.tts || b.say }); } }));
   const jf = path.join(OUT, "voice_jobs.json");
   writeJson(jf, jobs);
   console.log(`tts: ${jobs.length} clips with ${script.voice} ${script.rate}`);
   return new Promise((res, rej) => {
-    const p = spawn("python", [path.join(__dirname, "tts.py"), jf, VOICE, "--voice", script.voice, "--rate", script.rate, "--concurrency", "6"], { stdio: "inherit" });
+    const p = spawn("python", [path.join(__dirname, "tts.py"), jf, VOICE, "--voice", script.voice, "--rate", script.rate, "--concurrency", "10"], { stdio: "inherit" });
     p.on("close", c => c === 0 ? res() : rej(new Error("tts failed")));
   });
 }

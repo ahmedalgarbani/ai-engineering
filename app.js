@@ -79,6 +79,13 @@
     const FL = { all: ["All", "الكل"], orig: ["Course", "الكورس"], add: ["Added", "إضافي"], core: ["Core", "أساسي"], todo: ["To do", "متبقي"] };
     document.querySelectorAll("#filters button").forEach(b => { b.textContent = T(FL[b.dataset.f]); });
     $("#examHdrBtn").classList.toggle("on", location.hash === "#exam");
+    $("#vocabHdrLbl").textContent = AR() ? "الكلمات" : "Words";
+    $("#vocabHdrBtn").classList.toggle("on", /^#vocab(\/|$)/.test(location.hash));
+    const vs = window.VocabStats ? window.VocabStats(store) : null;
+    $("#asideVocabT").textContent = AR() ? "الكلمات الإنجليزية" : "English Words";
+    $("#asideVocabS").textContent = vs
+      ? (AR() ? `حفظت ${vs.known} من ${vs.total} كلمة${vs.due ? ` · ${vs.due} للمراجعة` : ""}` : `You know ${vs.known} of ${vs.total}${vs.due ? ` · ${vs.due} due` : ""}`)
+      : (AR() ? "تعلّم كلمات الكورس" : "Learn the course vocabulary");
   }
 
   // ---------- sidebar ----------
@@ -140,6 +147,8 @@
   $("#homeLink").addEventListener("click", () => { history.replaceState(null, "", location.pathname); render(); });
   $("#examHdrBtn").addEventListener("click", () => { location.hash = "exam"; document.body.classList.remove("nav"); });
   $("#asideExamBtn").addEventListener("click", () => { location.hash = "exam"; document.body.classList.remove("nav"); });
+  $("#vocabHdrBtn").addEventListener("click", () => { location.hash = "vocab"; document.body.classList.remove("nav"); });
+  $("#asideVocabBtn").addEventListener("click", () => { location.hash = "vocab"; document.body.classList.remove("nav"); });
 
   // ---------- home ----------
   function home() {
@@ -156,6 +165,7 @@
 
     const nSt = COURSE.stages.length;
     const nQs = window.EXAM_BANK ? window.EXAM_BANK.length : 42;
+    const vs = window.VocabStats ? window.VocabStats(store) : null;
     $("#page").innerHTML = `
       <section class="hero">
         <div>
@@ -179,6 +189,16 @@
           </div>
         </div>
       </section>
+
+      ${vs ? `<div class="exam-cta-row vc-cta">
+        <div>
+          <h3>🔤 ${AR() ? "تعلّم كلمات الكورس بالإنجليزي" : "Learn the course words in English"}</h3>
+          <p>${AR()
+            ? `${vs.total} كلمة ومصطلح مع الصوت والنطق والمعنى العربي ومثال. حفظت ${vs.known} منها${vs.due ? ` · ${vs.due} كلمة تنتظر المراجعة` : ""}.`
+            : `${vs.total} words and terms with audio, pronunciation, Arabic meaning and an example. You know ${vs.known}${vs.due ? ` · ${vs.due} due for review` : ""}.`}</p>
+        </div>
+        <button class="btn pri" id="goVocab" style="--sc:var(--accent)">${AR() ? (vs.known || vs.learning ? "أكمل تعلّم الكلمات ←" : "ابدأ تعلّم الكلمات ←") : (vs.known || vs.learning ? "Continue learning words →" : "Start learning words →")}</button>
+      </div>` : ""}
 
       <div class="sec-h">
         <h3>${AR() ? "مراحل الكورس" : "Course stages"}</h3>
@@ -216,6 +236,7 @@
     $("#goContinue").onclick = () => location.hash = nextTodo.slug;
     $("#goExamHome").onclick = () => location.hash = "exam";
     $("#goExamBot").onclick = () => location.hash = "exam";
+    if ($("#goVocab")) $("#goVocab").onclick = () => location.hash = "vocab";
     document.querySelectorAll(".scard").forEach(r => {
       const go = () => location.hash = r.dataset.first;
       r.addEventListener("click", go);
@@ -234,7 +255,8 @@
       ["motion", AR() ? "شرح بالموشن" : "Motion explainer"],
       ["image", AR() ? "الملخص والصور" : "Summary & visuals"],
       ["ar", AR() ? "الشرح بالعربي" : "Arabic guide"],
-      ["en", AR() ? "الشرح بالإنجليزي" : "English guide"]
+      ["en", AR() ? "الشرح بالإنجليزي" : "English guide"],
+      ["words", AR() ? "🔤 كلمات الدرس" : "🔤 Lesson words"]
     ];
     page.innerHTML = `
       <div class="eyebrow">${l.stage.id === "C" ? (AR() ? "المفاهيم الأساسية" : "Core concepts") : (AR() ? "المرحلة " + stLabel(l.stage) : "Stage " + stLabel(l.stage))} · ${esc(T(l.module.t).replace(/:.*/, ""))} · ${AR() ? `الدرس ${mi} من ${l.module.lessons.length}` : `lesson ${mi} of ${l.module.lessons.length}`}</div>
@@ -293,7 +315,8 @@
     if (tab === "slides") slides(l, next, p);
     else if (tab === "motion") motion(l, next, p);
     else if (tab === "image") poster(l, p);
-    else article(l, p, tab);
+    else if (tab === "words" && window.renderLessonWords) window.renderLessonWords(p, l, { ui, store, flat, onChange: refreshHeaderBadges });
+    else article(l, p, tab === "words" ? "en" : tab);
   }
 
   // ---------- PowerPoint Slide Deck (Redesigned + 3 Themes + .PPTX Export) ----------
@@ -709,6 +732,16 @@
         registerCleanup: fn => cleanups.push(fn),
         onGoLesson: slug => { location.hash = slug; },
         onExamSaved: () => refreshHeaderBadges()
+      });
+    } else if (/^vocab(\/|$)/.test(hash) && window.renderVocabView) {
+      document.documentElement.style.setProperty("--accent", "#f5a524");
+      const parts = hash.split("/");
+      window.renderVocabView($("#page"), {
+        ui, flat, store,
+        registerCleanup: fn => cleanups.push(fn),
+        onChange: refreshHeaderBadges,
+        lessonSlug: bySlug[parts[1]] ? parts[1] : "",
+        mode: parts[2] || ""
       });
     } else if (bySlug[hash]) {
       lesson(bySlug[hash]);

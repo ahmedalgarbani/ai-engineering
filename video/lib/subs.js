@@ -29,7 +29,7 @@ function segmentCues(plan, ttsDir) {
       const base = c.start + k.at;
       let meta;
       try { meta = JSON.parse(fs.readFileSync(`${ttsDir}/${k.key}.json`, "utf8")); } catch (e) { meta = null; }
-      const sents = meta && meta.sentences && meta.sentences.length ? meta.sentences : [{ start: 0, end: k.dur, text: k.text }];
+      const sents = meta && meta.sentences && meta.sentences.length && !k.text ? meta.sentences : [{ start: 0, end: k.dur, text: k.text }];
       sents.forEach(s => splitSentence(s).forEach(x => cues.push({ start: base + x.start, end: base + Math.min(x.end, k.dur + 0.2), text: x.text })));
     }
   }

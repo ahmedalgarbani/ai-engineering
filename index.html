@@ -19,6 +19,7 @@
   </div>
   <div class="hdr-r">
     <div class="prog"><span class="num" id="progTxt">0 / 0</span><div class="bar"><i id="progBar"></i></div></div>
+    <button class="exam-hdr-btn" id="vocabHdrBtn" title="English vocabulary · الكلمات الإنجليزية">🔤 <span id="vocabHdrLbl">Words</span></button>
     <button class="exam-hdr-btn" id="examHdrBtn" title="End-of-Course Level Assessment">🎓 <span id="examHdrLbl">Final Exam · الاختبار</span><span class="lv-chip" id="hdrLv" style="display:none"></span></button>
     <button class="icon-btn" id="themeBtn" title="Toggle Light / Dark theme" aria-label="Toggle theme">☀️</button>
     <div class="seg" role="group" aria-label="Interface language"><button data-l="en">EN</button><button data-l="ar">عربي</button></div>
@@ -38,6 +39,13 @@
     </div>
     <nav class="tree" id="tree"></nav>
     <div class="aside-foot">
+      <button class="aside-exam aside-vocab" id="asideVocabBtn">
+        <span style="font-size:22px">🔤</span>
+        <div>
+          <b id="asideVocabT">English Words</b>
+          <small id="asideVocabS">Learn the course vocabulary</small>
+        </div>
+      </button>
       <button class="aside-exam" id="asideExamBtn">
         <span style="font-size:22px">🎓</span>
         <div>
@@ -75,6 +83,8 @@
 <script src="explainers/s6.js"></script>
 <script src="explainers/s7.js"></script>
 <script src="explainers/s8.js"></script>
+<script src="vocab-data.js"></script>
+<script src="vocab.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

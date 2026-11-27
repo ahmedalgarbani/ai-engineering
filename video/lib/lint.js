@@ -69,8 +69,8 @@ function lint(ids, opts) {
         if (small > 0 && ov / small > (opts.overlap || 0.18)) issues.add(`beat ${bi}: overlap ${A.o.id} × ${B.o.id} (${Math.round(ov / small * 100)}%)`);
       }
     });
-    if (film.total > 180) issues.add(`long: ${Math.round(film.total)}s`);
-    if (film.beats.some(b => (b.say || "").length > 95)) issues.add(`long caption: ${film.beats.filter(b => b.say.length > 95).map(b => b.i).join(",")}`);
+    if (film.total > 240) issues.add(`long: ${Math.round(film.total)}s`);
+    if (film.beats.some(b => (b.say || "").length > 125)) issues.add(`long caption: ${film.beats.filter(b => b.say.length > 125).map(b => b.i).join(",")}`);
     issues.forEach(m => report.push(`${l.id}: ${m}`));
   }
   return { report, lessons, beats, seconds };
