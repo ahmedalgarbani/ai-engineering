@@ -32,24 +32,28 @@ Latin labels default to the serif math font; Arabic text switches font automatic
 `text` · `box` (label, sub, icon, w/h auto) · `zone` (dashed panel, label on top) · `arrow` / `line` (x1..y2) ·
 `link(id, a, b, p)` (arrow attached to two objects, follows them) · `dot` · `plane` (grid, matrix `m`) ·
 `vec` (on a plane: `{plane, v:[x,y], tip:"dot"}`) · `bar` (`v` 0..1) · `icon` (`name`, `s`) · `doc` (`hl` line) ·
-`code` (`lines`, `hl`) · `bubble` (`side: u|a|t|s`) · `arc` · `matrix` (`data`, `heat`) · `ring` (`spin`) · `num` (`v`) ·
-`brace` · `gauge` (`v`) · `path` (`d`).
+`code` (`lines`, `hl`) · `bubble` (`side: u|a|t|s`) · `arc` · `matrix` (`data`, `heat`) · `ring` (`spin`, `speed`) ·
+`num` (`v`) · `brace` · `gauge` (`v`) · `path` (`d`) · `badge` (`text`, `color`) · `curve` (`pts`, `xlabel`, `ylabel`).
 
 Helpers: `row(pre, labels, p)` tokens · `col(pre, labels, p)` list (icons/colors) · `chain(pre, labels, p)` boxes + arrows
-(`pre_i` arrows; `vertical`, `icons`, `subs`, `colors`) · `hub(center, pre, labels, p)` · `grid(pre, labels, p)` ·
-`versus(pre, left, right)` → panels `preL`/`preR` (returns their x) · `mark(id, target, "x"|"check")` · `note(id, p)`.
+(`pre_i` arrows; `vertical`, `icons`, `subs`, `colors`, `pulse: true` for live animated signal) · `hub(center, pre, labels, p)` ·
+`grid(pre, labels, p)` · `versus(pre, left, right)` → panels `preL`/`preR` (returns their x) · `mark(id, target, "x"|"check")` ·
+`note(id, p)` · `callout(id, p)` pill badge · `chart(pre, {xl, yl, curves})` axes + animated curves.
 
-opts: `at` (seconds or `"60%"` of the narration), `dur`, `in` (`fade rise drop pop grow draw type slide none`), `st` (stagger), `ease`.
+opts: `at` (seconds or `"45%"` of the narration — works on EVERY creator & layout helper!), `dur`, `in` (`fade rise drop pop grow draw type slide none`), `st` (stagger), `ease`.
 
 ## Motion
 `to(sel, props, o)` (props may be functions of the old value; `dx`, `dy`; `v:[x,y]` for vectors) ·
-`out(sel, {how})` · `clear({keep})` · `pulse(sel, {color})` · `flow(a, b, {n, color, bend})` packets ·
+`out(sel, {how})` · `clear({keep})` (also resets camera to 1×) · `pulse(sel, {color})` · `flow(a, b, {n, color, bend})` ·
+`stream(a, b, {span, every, color, bend})` continuous packet stream · `focus(sel, {zoom, dim, color})` / `unfocus()` 3Blue1Brown spotlight ·
 `cam({x, y, z})` · `wait(d)` / `at(t)` move the beat cursor · `get(id)` current target props · `P(plane, x, y)` → screen point.
 Selectors: an id, `"pre*"` prefix, or an array.
 
 ## Style rules
-- Start from a concrete example, build ONE picture, then transform it; each beat changes something visible.
-- Pattern: "لو فعلنا X…" (animate) → "سنحصل على Y" (+ formula). Short sentences, simple MSA.
-- 10–16 beats, 3–5 sections, ~1–2 minutes. End with a beat that sums the lesson up in one picture.
-- English technical terms stay in Latin in the picture; captions are Arabic.
-- QA: `node build.js stills <id>` after `plan`, or the scratch QA script.
+- Start from a concrete example, build ONE picture, then transform/zoom/focus it; each beat changes something visible across the narration (`at: "0%"`, `"35%"`, `"65%"`).
+- Minimize `s.clear()`: reuse and morph objects with `to()`, `focus()`, `unfocus()`, `cam()`, and `out()` instead of wiping every beat!
+- Use `pulse: true` on key links/arrows and `s.stream(...)` so data flows stay alive while the narrator speaks.
+- Pattern: concrete example → why naive fails → mechanism step by step (+ formulas) → real code/trace → common mistake vs fix → one-picture summary.
+- **Target depth**: 10–15 beats, 4–5 sections, **~80–135 seconds (~1.5–2.2 min)** per lesson (up to ~18–22 beats for flagship topics like `C2.2`).
+- Captions: simple MSA Arabic, ≤ ~115 chars, one crisp idea; English technical terms stay in Latin in captions and diagrams (`ttsText` pronounces them cleanly in Arabic!).
+- QA: `node video/lib/lint.js <id|stage>` MUST return **0 findings**.

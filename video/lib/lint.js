@@ -5,7 +5,7 @@ const { loadCourse } = require("./course");
 
 function rectOf(o, P, X) {
   const t = o.type, s = P.scale != null ? P.scale : 1;
-  if (t === "box" || t === "doc" || t === "code" || t === "bubble" || t === "matrix") return { x: P.x, y: P.y, hw: P.w / 2 * s, hh: P.h / 2 * s };
+  if (t === "box" || t === "doc" || t === "code" || t === "bubble" || t === "matrix" || t === "badge" || t === "curve") return { x: P.x, y: P.y, hw: P.w / 2 * s, hh: P.h / 2 * s };
   if (t === "icon") return { x: P.x, y: P.y, hw: P.s / 2 * s, hh: P.s / 2 * s };
   if (t === "text") { const lines = String(P.text).split("\n"); const w = Math.max(...lines.map(l => X.textW(l, P.size, o.prm.font))); const a = o.prm.anchor; return { x: a === "l" ? P.x + w / 2 : a === "r" ? P.x - w / 2 : P.x, y: P.y, hw: w / 2 * s, hh: P.size * 0.6 * lines.length * s }; }
   if (t === "bar") return { x: P.x + P.w / 2, y: P.y, hw: P.w / 2, hh: (o.prm.h || 26) / 2 };

@@ -177,10 +177,16 @@
     [/\bPython\b/gi, "بايثون"], [/\bNode\b/g, "نود"], [/\bRegex\b/gi, "ريجيكس"],
     // Replace any remaining snake_case underscores with spaces so edge-tts never chokes on "_"
     [/([A-Za-z0-9])_([A-Za-z0-9])/g, "$1 $2"],
-    // Helpful Arabic diacritics so HamedNeural pronounces key tech words naturally
-    [/\bانتبه\b/g, "انتبِهْ"], [/\bكودك\b/g, "كُودُك"], [/\bوكودك\b/g, "وكُودُك"],
-    [/\bالكود\b/g, "الكُود"], [/\bبالكود\b/g, "بالكُود"], [/\bكود\b/g, "كُود"],
-    [/\bينفّذ\b/g, "يُنفِّذ"], [/\bينفذ\b/g, "يُنفِّذ"], [/\bالمقيّم\b/g, "المُقيِّم"], [/\bالمهيّئ\b/g, "المُهيِّئ"]
+    // Smooth Arabic prefixes before converted terms (الـ API → ال إيه بي آي, بـ JSON → بجيسون)
+    [/الـ\s+/g, "ال"], [/للـ\s+/g, "لل"], [/بالـ\s+/g, "بال"], [/والـ\s+/g, "وال"], [/كالـ\s+/g, "كال"],
+    [/بـ\s+/g, "ب"], [/لـ\s+/g, "لِ"],
+    // Helpful Arabic diacritics using Arabic-range boundaries (\b only works on ASCII!)
+    [/(?<![؀-ۿ])انتبه(?![؀-ۿ])/g, "انتبِهْ"],
+    [/(?<![؀-ۿ])كودك(?![؀-ۿ])/g, "كُودُك"], [/(?<![؀-ۿ])وكودك(?![؀-ۿ])/g, "وكُودُك"],
+    [/(?<![؀-ۿ])الكود(?![؀-ۿ])/g, "الكُود"], [/(?<![؀-ۿ])بالكود(?![؀-ۿ])/g, "بالكُود"],
+    [/(?<![؀-ۿ])كود(?![؀-ۿ])/g, "كُود"], [/(?<![؀-ۿ])كودًا(?![؀-ۿ])/g, "كُودًا"],
+    [/(?<![؀-ۿ])ينفّذ(?![؀-ۿ])/g, "يُنفِّذ"], [/(?<![؀-ۿ])ينفذ(?![؀-ۿ])/g, "يُنفِّذ"],
+    [/(?<![؀-ۿ])المقيّم(?![؀-ۿ])/g, "المُقيِّم"], [/(?<![؀-ۿ])المهيّئ(?![؀-ۿ])/g, "المُهيِّئ"]
   ];
   function ttsText(s) {
     let t = speakText(s);
@@ -921,7 +927,8 @@
 
   class Ctx {
     constructor(film, T, vd) { this.f = film; this.T = T; this.vd = vd; this.c = 0; this.end = 0; this.W = W; this.H = H; this.C = C; }
-    _t(o) { let a = o && o.at != null ? o.at : this.c; if (typeof a === "string") a = parseFloat(a) / 100 * (LEAD + this.vd); return this.T + a; }
+    _rel(o) { let a = o && o.at != null ? o.at : this.c; if (typeof a === "string") a = parseFloat(a) / 100 * (LEAD + this.vd); return a; }
+    _t(o) { return this.T + this._rel(o); }
     _mark(t1) { this.end = Math.max(this.end, t1 - this.T); }
     get voice() { return this.vd; }
     wait(d) { this.c += d; return this; }
@@ -995,6 +1002,8 @@
     brace(id, p, o) { return this._make("brace", id, p, o); }
     gauge(id, p, o) { return this._make("gauge", id, p, o); }
     path(id, p, o) { return this._make("path", id, p, o); }
+    badge(id, p, o) { return this._make("badge", id, p, o); }
+    curve(id, p, o) { return this._make("curve", id, p, o); }
     // ---- motion
     to(sel, props, o) {
       o = o || {};
@@ -1031,6 +1040,9 @@
     clear(o) {
       o = o || {};
       const keep = new Set(this.sel(o.keep || []));
+      if (o.resetCam !== false && (this.f.cam.L.z !== 1 || this.f.cam.L.x !== W / 2 || this.f.cam.L.y !== H / 2)) {
+        this.cam({ x: W / 2, y: H / 2, z: 1 }, { at: this._rel(o), dur: o.dur != null ? Math.max(0.45, o.dur) : 0.6 });
+      }
       return this.out(this.f.objs.filter(ob => ob.dead === Infinity && !keep.has(ob) && this.f.byId[ob.id] === ob), Object.assign({ dur: 0.45 }, o));
     }
     pulse(sel, o) {
@@ -1525,10 +1537,11 @@
     const preloadCache = new Map();
     function preloadBeat(b) {
       const B = film.beats[b];
-      if (!B || !B.say || !B.measured || missing.has(B.key) || preloadCache.has(B.key)) return;
+      if (!B || !B.say || missing.has(B.key) || preloadCache.has(B.key)) return;
       if (preloadCache.size > 8) preloadCache.clear();
       const p = new Audio(base + B.key + ".mp3");
       p.preload = "auto";
+      p.onerror = () => { missing.add(B.key); preloadCache.delete(B.key); };
       preloadCache.set(B.key, p);
     }
     function stopVoice() {
@@ -1553,9 +1566,10 @@
       voiceBeat = b;
       if (!voiceOn || !B.say) return;
       if (offset > B.vd - 0.15) return;
-      if (!B.measured || missing.has(B.key)) { if (offset < 0.35) speakFallback(B.say, tok); return; }
-      const a = preloadCache.get(B.key) || new Audio(base + B.key + ".mp3");
+      if (missing.has(B.key)) { if (offset < 0.35) speakFallback(B.say, tok); return; }
+      const cached = preloadCache.get(B.key);
       preloadCache.delete(B.key);
+      const a = (cached && !cached.error) ? cached : new Audio(base + B.key + ".mp3");
       a.playbackRate = speed;
       a.onerror = () => { if (tok !== token) return; missing.add(B.key); audio = null; if (offset < 0.35) speakFallback(B.say, tok); };
       a.onended = () => { if (tok === token) audio = null; };

@@ -4,531 +4,772 @@
 
   // ------------------------------------------------------------------ 2.1 Model APIs: your first integration
   X.lesson("2.1", [
-    { sec: "الطلب والرد", say: "أول تكامل مع واجهة النموذج: نرسل قائمة رسائل، ونستقبل ردًا.", eq: "@T{response} = @T{API}(@T{messages})", do: s => {
-      s.chain("c", ["your app", "model API", "response"], { y: 540, gap: 130, icons: ["code", "cloud", "chat"], colors: ["teal", "blue", "green"], w: 210, h: 160, size: 28 }, { st: 0.3 });
-      s.flow("c0", "c1", { color: "teal", at: 1.2 }); s.flow("c1", "c2", { color: "blue", at: 1.9 });
+    { sec: "أول تكامل", say: "أول تكامل مع Model API بسيط في جوهره: تطبيقك يرسل قائمة رسائل، ويستقبل ردًا.", eq: "@T{response} = @T{API}(@T{messages})", do: s => {
+      s.chain("c", ["Your App", "Model API", "Response"], { y: 515, gap: 145, icons: ["code", "cloud", "chat"], colors: ["teal", "blue", "green"], w: 230, h: 165, size: 26, pulse: true }, { at: "0%", st: 0.24 });
+      s.stream("c0", "c1", { at: "48%", span: 1.8, every: 0.5, color: "teal" });
+      s.stream("c1", "c2", { at: "62%", span: 1.8, every: 0.5, color: "green" });
     }},
-    { sec: "الأدوار", say: "ولكل رسالة دور: system للتعليمات، ثم user، ثم assistant.", eq: "@P{system} @; @B{user} @; @T{assistant}", do: s => {
+    { say: "المفاجأة الأولى للمبتدئ: إذا أرسلت سؤالًا ثانيًا وحده، ينسى النموذج كل ما قيل قبل لحظة!", do: s => {
       s.clear({ dur: 0.4 });
-      s.bubble("sy", { text: "system: You are a helpful support assistant.", side: "s", x: 800, y: 340, w: 640, size: 26 }, { at: 0.3 });
-      s.bubble("us", { text: "user: Where is my order?", side: "u", x: 980, y: 500, w: 420, size: 26 }, { at: 0.7 });
-      s.bubble("as", { text: "assistant: Let me check that for you.", side: "a", x: 620, y: 660, w: 480, size: 26 }, { at: 1.1 });
+      s.bubble("u1", { text: "Call 1 · user: Where is order #812?", side: "u", x: 470, y: 345, w: 460, size: 23 }, { at: "8%" });
+      s.bubble("a1", { text: "assistant: Order #812 shipped yesterday.", side: "a", x: 1100, y: 415, w: 470, size: 23, color: "green" }, { at: "28%" });
+      s.line("sep", { x1: 240, y1: 520, x2: 1360, y2: 520, color: "faint", dash: "8 8", w: 2.5 }, { at: "46%" });
+      s.bubble("u2", { text: "Call 2 · user: When will it arrive?", side: "u", x: 470, y: 635, w: 460, size: 23 }, { at: "54%" });
+      s.bubble("a2", { text: "assistant: Which order do you mean?", side: "a", x: 1100, y: 710, w: 470, size: 23, color: "red" }, { at: "74%" });
+      s.mark("ax", "a2", "x", { at: "84%" });
     }},
-    { sec: "بلا حالة", say: "والـ API بلا حالة: أعد إرسال السجل كاملًا في كل استدعاء.", eq: "@T{messages}_{n} = @T{history} + @B{new}", do: s => {
-      s.to(["sy", "us", "as"], { scale: 0.8, x: v => v - 260, y: v => v - 30 }, { dur: 0.6 });
-      s.zone("call", { x: 540, y: 470, w: 720, h: 420, label: "call #2 sends all of this", color: "blue" }, { at: 0.5 });
-      s.bubble("u2", { text: "user: And when will it arrive?", side: "u", x: 600, y: 760, w: 440, size: 24 }, { at: 0.9 });
-      s.box("api", { x: 1260, y: 520, w: 200, h: 140, label: "API", icon: "cloud", color: "blue", size: 28 }, { at: 1.1 });
-      s.link("la", "call", "api", { color: "blue" }, { at: 1.3 });
-    }},
-    { sec: "البث", say: "والبث يعرض الـ Tokens فور وصولها، فتبدو الواجهة سريعة.", do: s => {
+    { sec: "الأدوار والحالة", say: "داخل الطلب، تحمل كل رسالة دورًا محددًا: system للتعليمات، ثم user، ثم assistant.", eq: "@P{system} @; @to @; @B{user} @; @to @; @G{assistant}", do: s => {
       s.clear({ dur: 0.4 });
-      s.versus("vs", "no streaming", "streaming", { colors: ["dim", "green"] }, { at: 0.2 });
-      s.icon("sp", { name: "hourglass", x: 435, y: 540, s: 90, color: "dim" }, { at: 0.5 });
-      s.note("wt", { text: "wait 6s… then everything", x: 435, y: 650, font: "math" }, { at: 0.6 });
-      s.bubble("st", { text: "Your order shipped yesterday and arrives Friday.", side: "a", x: 1165, y: 540, w: 500, color: "green" }, { at: 0.6, in: "type", dur: 2.4 });
+      s.bubble("sy", { text: "system: You are a polite support assistant.", side: "s", x: 800, y: 340, w: 660, size: 25 }, { at: "10%" });
+      s.bubble("us", { text: "user: Where is my refund for order #812?", side: "u", x: 960, y: 505, w: 500, size: 25 }, { at: "38%" });
+      s.bubble("as", { text: "assistant: Checking refund #812 right now.", side: "a", x: 640, y: 675, w: 510, size: 25, color: "teal" }, { at: "64%" });
+      s.pulse(["sy", "us", "as"], { at: "78%", st: 0.12 });
     }},
-    { sec: "الاستهلاك", say: "والرد يخبرك بسبب التوقف، وعدد الـ Tokens المستهلكة.", eq: "@T{usage}: @; n_{@T{in}}, @; n_{@T{out}}", do: s => {
+    { say: "ولأن الـ API بلا حالة Stateless، يجب أن تُعيد إرسال سجل المحادثة كاملًا في كل استدعاء جديد.", eq: "@T{messages}_{n} = @T{history} + @B{new}", do: s => {
+      s.to(["sy", "us", "as"], { scale: 0.78, x: v => v - 260, y: v => v - 35 }, { at: "0%", dur: 0.65 });
+      s.zone("call", { x: 540, y: 475, w: 720, h: 430, label: "Call #2 payload (stateless)", color: "blue" }, { at: "26%" });
+      s.bubble("u2", { text: "user: And when will it arrive?", side: "u", x: 540, y: 775, w: 460, size: 23 }, { at: "44%" });
+      s.box("api", { x: 1270, y: 530, w: 220, h: 150, label: "Model API", icon: "cloud", color: "blue", size: 26 }, { at: "52%" });
+      s.link("la", "call", "api", { color: "blue", label: "full history", lc: "blue", pulse: true }, { at: "60%" });
+      s.stream("call", "api", { at: "66%", span: 1.8, every: 0.5, color: "blue" });
+    }},
+    { sec: "البث والاستجابة", say: "مع البث Streaming تظهر الـ Tokens فور توليدها، فينخفض زمن أول حرف من 6 ثوانٍ إلى لحظات.", eq: "@T{TTFT}: @; @R{6.0 s} @to @G{0.4 s}", do: s => {
       s.clear({ dur: 0.4 });
-      s.code("resp", { x: 800, y: 520, size: 26, title: "response", lines: ["stop_reason: \"end_turn\"", "usage: {", "  input_tokens: 412,", "  output_tokens: 86", "}"] }, { at: 0.3, dur: 1.4 });
-      s.to("resp", { hl: 0 }, { at: 1.9, dur: 0.2 }); s.to("resp", { hl: 2 }, { at: 2.6, dur: 0.2 });
+      s.versus("vs", "No Streaming", "Streaming (SSE)", { colors: ["dim", "green"], y: 545, h: 520 }, { at: "8%" });
+      s.icon("sp", { name: "hourglass", x: 440, y: 515, s: 92, color: "dim" }, { at: "24%" });
+      s.badge("wt", { text: "frozen 6.0 s… then dump", x: 440, y: 650, color: "red", size: 22 }, { at: "40%" });
+      s.bubble("st", { text: "Your refund for order #812 was approved and arrives in 3 business days.", side: "a", x: 1160, y: 515, w: 500, size: 24, color: "green" }, { at: "30%", in: "type", dur: 2.2 });
+      s.badge("ft", { text: "first token in 0.4 s ✓", x: 1160, y: 660, color: "green", size: 22 }, { at: "74%" });
     }},
-    { say: "فسجّل الاستهلاك دائمًا لتتابع التكلفة.", do: s => {
-      s.to("resp", { x: 470, scale: 0.8, hl: -1 }, { dur: 0.6 });
-      ["Mon", "Tue", "Wed", "Thu", "Fri"].forEach((d, i) => { const v = [0.3, 0.45, 0.4, 0.8, 0.55][i]; s.box("cb" + i, { x: 960 + i * 80, y: 700 - v * 150, w: 52, h: v * 300, r: 6, label: "", color: i === 3 ? "orange" : "teal", fill: "panel" }, { at: 0.5 + i * 0.1, in: "grow" }); s.note("cd" + i, { text: d, x: 960 + i * 80, y: 730, size: 20, font: "math" }, { at: 0.5 + i * 0.1 }); });
-      s.note("ct", { text: "token cost per day", x: 1120, y: 360, font: "math", color: "gold" }, { at: 0.4 });
-    }},
-    { sec: "مفتاح الـ API", say: "واحفظ مفتاح الـ API في متغيرات البيئة على الخادم، لا في كود الواجهة أبدًا.", do: s => {
+    { say: "ويمكن للطلب أن يحمل وسائط أيضًا: نصًا وصورة أو ملف PDF داخل الرسالة نفسها.", do: s => {
       s.clear({ dur: 0.4 });
-      s.box("br", { x: 450, y: 520, w: 380, h: 200, label: "browser code", sub: "key = \"sk-…\"", icon: "browser", color: "red", size: 28 }, { at: 0.3 });
-      s.mark("bx", "br", "x", { at: 0.8 });
-      s.box("sv", { x: 1150, y: 520, w: 380, h: 200, label: "server", sub: "os.environ[\"API_KEY\"]", icon: "server", color: "green", size: 28 }, { at: 0.9 });
-      s.mark("sc", "sv", "check", { at: 1.3 });
+      s.zone("msg", { x: 540, y: 525, w: 540, h: 420, label: "user message content[]", color: "teal" }, { at: "8%" });
+      s.box("p1", { x: 540, y: 445, w: 400, h: 86, label: "text: \"Check this receipt\"", icon: "chat", inline: true, color: "blue", size: 22 }, { at: "24%" });
+      s.box("p2", { x: 540, y: 605, w: 400, h: 86, label: "image: receipt_812.jpg", icon: "image", inline: true, color: "gold", size: 22 }, { at: "42%" });
+      s.box("api", { x: 1190, y: 525, w: 250, h: 155, label: "Multimodal\nAPI", icon: "eye", color: "purple", size: 25 }, { at: "56%" });
+      s.link("lm", "msg", "api", { color: "teal", pulse: true }, { at: "64%" });
+      s.stream("msg", "api", { at: "70%", span: 1.6, every: 0.5, color: "gold" });
+    }},
+    { sec: "في الكود", say: "هكذا نكتب أول استدعاء في Python: نحدد النموذج، وmax_tokens، وsystem، وقائمة الرسائل.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.code("py", { x: 800, y: 515, size: 23, title: "first_call.py", lines: [
+        "resp = client.messages.create(",
+        "    model=MODEL, max_tokens=500,",
+        "    system=\"You are a helpful support assistant.\",",
+        "    messages=history + [{\"role\": \"user\", \"content\": q}]",
+        ")",
+        "print(resp.stop_reason, resp.usage)"
+      ] }, { at: "8%", dur: 1.6 });
+      [1, 2, 3, 5].forEach((h, i) => s.to("py", { hl: h }, { at: (44 + i * 13) + "%", dur: 0.2 }));
+    }},
+    { say: "كل رد يعود ببيانات تشغيل حاسمة: سبب التوقف stop_reason وعدد Tokens المدخلات والمخرجات.", eq: "@T{usage} = @{ n_{@T{in}}, @; n_{@T{out}} @}", do: s => {
+      s.to("py", { x: 470, scale: 0.72, hl: 5 }, { at: "0%", dur: 0.6 });
+      s.code("resp", { x: 1170, y: 515, size: 23, title: "response metadata", lines: [
+        "stop_reason: \"end_turn\"",
+        "usage: {",
+        "  input_tokens: 412,",
+        "  output_tokens: 96",
+        "}"
+      ] }, { at: "24%", dur: 1.2 });
+      s.to("resp", { hl: 0 }, { at: "58%", dur: 0.2 });
+      s.to("resp", { hl: 2 }, { at: "74%", dur: 0.2 });
+    }},
+    { say: "فسجّل الاستهلاك دائمًا في لوحة مراقبة يومية، لتكتشف أي ارتفاع مفاجئ في التكلفة مبكرًا.", do: s => {
+      s.out("py", { at: "0%", dur: 0.35 });
+      s.to("resp", { x: 440, scale: 0.85, hl: -1 }, { at: "6%", dur: 0.6 });
+      s.note("ct", { text: "Daily token spend ($)", x: 1120, y: 330, font: "math", color: "gold", size: 28 }, { at: "20%" });
+      ["Mon", "Tue", "Wed", "Thu", "Fri"].forEach((d, i) => {
+        const v = [0.28, 0.42, 0.38, 0.86, 0.50][i];
+        s.box("cb" + i, { x: 920 + i * 100, y: 710 - v * 155, w: 62, h: v * 310, r: 8, label: "", color: i === 3 ? "orange" : "teal", fill: "panel" }, { at: (30 + i * 8) + "%", in: "grow" });
+        s.note("cd" + i, { text: d, x: 920 + i * 100, y: 745, size: 22, font: "math" }, { at: (32 + i * 8) + "%" });
+      });
+      s.badge("spk", { text: "spike caught!", x: 1220, y: 395, color: "orange", size: 21 }, { at: "76%" });
+    }},
+    { sec: "الأمان والأخطاء", say: "إياك أن تضع مفتاح الـ API في كود المتصفح؛ أي زائر سيسرقه في ثانية من أدوات المطوّر!", do: s => {
+      s.clear({ dur: 0.4 });
+      s.box("br", { x: 440, y: 525, w: 420, h: 210, label: "Frontend / Browser", sub: "const KEY = \"sk-ant-…\"", icon: "browser", color: "red", size: 26 }, { at: "10%" });
+      s.mark("bx", "br", "x", { at: "34%" });
+      s.badge("lk", { text: "مكشوف في DevTools!", x: 440, y: 695, color: "red", size: 22 }, { at: "48%" });
+      s.box("sv", { x: 1160, y: 525, w: 430, h: 210, label: "Backend Server", sub: "os.environ[\"API_KEY\"]", icon: "server", color: "green", size: 26 }, { at: "58%" });
+      s.mark("sc", "sv", "check", { at: "76%" });
+      s.badge("ok", { text: "محفوظ في متغيرات البيئة ✓", x: 1160, y: 695, color: "green", size: 22 }, { at: "80%" });
+    }},
+    { say: "وقبل الشحن، تأكد من ثلاث قواعد: حدّد max_tokens، وافحص stop_reason، وسجّل usage لكل طلب.", do: s => {
+      s.to(["br", "bx", "lk", "sv", "sc", "ok"], { opacity: 0.2 }, { at: "0%", dur: 0.4 });
+      s.col("rul", ["1 · Cap max_tokens per endpoint", "2 · Branch on stop_reason explicitly", "3 · Log input + output tokens per user"], { x: 800, y: 530, w: 640, h: 78, gap: 26, size: 26, icons: ["gauge", "flag", "chart"], colors: ["gold", "teal", "green"] }, { at: "18%", st: 0.22 });
+    }},
+    { sec: "الخلاصة", say: "إذن التكامل السليم يجمع: أدوارًا واضحة، وإرسال السجل، والبث، وتسجيل الاستهلاك، وحفظ المفتاح بالخادم.", eq: "@T{clean API} = @P{roles} + @B{history} + @G{stream} + @Y{usage} + @C{env key}", do: s => {
+      s.clear({ dur: 0.4 });
+      s.chain("sum", ["Roles", "History", "Stream", "Usage", "Env Key"], { y: 525, gap: 42, w: 220, h: 150, size: 24, icons: ["chat", "history", "bolt", "chart", "lock"], colors: ["purple", "blue", "green", "gold", "teal"], pulse: true }, { at: "10%", st: 0.14 });
     }}
   ]);
 
   // ------------------------------------------------------------------ 2.2 Structured outputs & runtime validation
   X.lesson("2.2", [
-    { sec: "المشكلة", say: "عندما يقرأ كودك مخرجات النموذج، يجب أن تكون مهيكلة.", do: s => {
-      s.bubble("free", { text: "Sure! This looks like a refund issue, and it seems quite urgent…", side: "a", x: 560, y: 480, w: 560 });
-      s.box("code", { x: 1200, y: 480, w: 240, h: 140, label: "your code", icon: "code", color: "teal", size: 28 }, { at: 0.6 });
-      s.link("l", "free", "code", { color: "red" }, { at: 0.9 });
-      s.box("err", { x: 1200, y: 660, label: "can't parse", size: 24, color: "red", h: 54 }, { at: 1.3 });
+    { sec: "فخ النص الحر", say: "تصل تذكرة عاجلة: تم خصم المبلغ مرتين. فتسأل النموذج ليصنّفها، فيرد بفقرة كلامية لطيفة!", do: s => {
+      s.bubble("q", { text: "user: Charged twice for order #402!", side: "u", x: 350, y: 515, w: 380, size: 23 }, { at: "0%" });
+      s.bubble("free", { text: "Sure! This looks like a refund issue, and it seems quite urgent so please help soon…", side: "a", x: 960, y: 480, w: 500, size: 23 }, { at: "34%" });
+      s.link("l0", "q", "free", { color: "dim", pulse: true }, { at: "28%" });
+      s.badge("pr", { text: "نص بشري حر… لا JSON!", x: 960, y: 665, color: "orange", size: 22 }, { at: "74%" });
     }},
-    { sec: "المخطط", say: "فنعرّف مخططًا: الحقول المطلوبة وأنواعها.", eq: "@T{Ticket} = @{ @T{category}, @; @T{urgent}, @; @T{summary} @}", do: s => {
+    { say: "عندما يحاول كودك قراءة هذا النص بـ Regex أو JSON.parse، ينهار النظام فورًا!", do: s => {
+      s.out(["q", "l0", "pr"], { at: "0%", dur: 0.35 });
+      s.to("free", { x: 470, y: 490 }, { at: "6%", dur: 0.55 });
+      s.box("cd", { x: 1170, y: 490, w: 280, h: 150, label: "Your Code", sub: "JSON.parse()", icon: "code", color: "teal", size: 26 }, { at: "22%" });
+      s.link("l1", "free", "cd", { color: "red", pulse: true }, { at: "34%" });
+      s.box("err", { x: 1170, y: 695, w: 430, h: 72, label: "SyntaxError: Unexpected token 'S'", font: "mono", size: 20, color: "red" }, { at: "58%" });
+      s.mark("ex", "err", "x", { at: "78%" });
+    }},
+    { sec: "المخطط الصارم", say: "الحل يبدأ بتعريف مخطط Schema صارم: أسماء الحقول المطلوبة وأنواعها الدقيقة.", eq: "@T{Ticket} = @{ @T{category}, @; @T{urgent}, @; @T{summary} @}", do: s => {
       s.clear({ dur: 0.4 });
-      s.code("z", { x: 800, y: 520, size: 26, title: "schema.ts", lines: ["const Ticket = z.object({", "  category: z.enum([\"refund\", \"shipping\", \"other\"]),", "  urgent: z.boolean(),", "  summary: z.string().max(200)", "});"] }, { at: 0.3, dur: 1.8 });
+      s.code("z", { x: 800, y: 515, size: 25, title: "schema.ts (Zod)", lines: [
+        "const Ticket = z.object({",
+        "  category: z.enum([\"refund\", \"shipping\", \"other\"]),",
+        "  urgent:   z.boolean(),",
+        "  summary:  z.string().max(200)",
+        "});"
+      ] }, { at: "10%", dur: 1.5 });
+      [1, 2, 3].forEach((h, i) => s.to("z", { hl: h }, { at: (48 + i * 14) + "%", dur: 0.2 }));
     }},
-    { say: "ونطلب من النموذج أن يلتزم بهذا المخطط.", do: s => {
-      s.to("z", { x: 470, scale: 0.75 }, { dur: 0.6 });
-      s.code("js", { x: 1150, y: 520, size: 24, title: "model output", lines: ["{", "  \"category\": \"refund\",", "  \"urgent\": true,", "  \"summary\": \"Charged twice\"", "}"] }, { at: 0.6, dur: 1.2 });
+    { say: "ثم نطلب من النموذج الالتزام بهذا المخطط عبر Structured Outputs، فيعيد JSON نظيفًا مطابقًا.", do: s => {
+      s.to("z", { x: 465, scale: 0.74, hl: -1 }, { at: "0%", dur: 0.6 });
+      s.code("js", { x: 1185, y: 515, size: 24, title: "model output (JSON)", lines: [
+        "{",
+        "  \"category\": \"refund\",",
+        "  \"urgent\": true,",
+        "  \"summary\": \"Charged twice\"",
+        "}"
+      ] }, { at: "28%", dur: 1.3 });
+      s.link("zj", "z", "js", { color: "green", label: "enforced", lc: "green", pulse: true }, { at: "62%" });
+      s.mark("okj", "js", "check", { at: "80%" });
     }},
-    { sec: "التحقق", say: "ثم نتحقق أثناء التشغيل، قبل أن يلمس منطق العمل.", eq: "@T{parse} @to @T{validate} @to @T{use}", do: s => {
+    { sec: "التحقق وقت التشغيل", say: "لكننا لا نمرّر الرد إلى منطق العمل مباشرة؛ بل نتحقق منه أثناء التشغيل عبر Zod أو Pydantic.", eq: "@T{parse} @to @Y{validate} @to @G{business logic}", do: s => {
       s.clear({ dur: 0.4 });
-      s.chain("v", ["model output", "validate", "business logic"], { y: 480, gap: 110, colors: ["soft", "gold", "green"], icons: ["code", "shieldok", "gear"], w: 230, h: 150, size: 26 }, { at: 0.3, st: 0.3 });
-      s.flow("v0", "v1", { color: "soft", at: 1.3 }); s.flow("v1", "v2", { color: "green", at: 1.9 });
+      s.chain("v", ["Model Output", "Runtime Validate", "Business Logic"], { y: 455, gap: 115, colors: ["soft", "gold", "green"], icons: ["code", "shieldok", "gear"], w: 255, h: 155, size: 24, pulse: true }, { at: "10%", st: 0.24 });
+      s.focus("v1", { zoom: 1.15, at: "54%", dur: 0.6 });
+      s.stream("v0", "v1", { at: "62%", span: 1.4, every: 0.45, color: "gold" });
+      s.stream("v1", "v2", { at: "74%", span: 1.4, every: 0.45, color: "green" });
     }},
-    { say: "فإن فشل التحقق، نعيد المحاولة مع رسالة الخطأ، أو نتراجع بأمان.", do: s => {
-      s.bubble("bad", { text: "{ \"category\": \"refnd\" }", side: "a", x: 470, y: 720, w: 330, font: "mono", size: 22, color: "red" }, { at: 0.2 });
-      s.box("msg", { x: 1020, y: 720, w: 470, h: 64, label: "category must be refund | shipping | other", size: 20, color: "red", font: "ui" }, { at: 0.7 });
-      s.link("rt", "msg", "v0", { color: "orange", bend: -0.25, label: "retry with the error", lc: "orange" }, { at: 1.2 });
+    { say: "فإن أخطأ النموذج مثلًا وكتب refnd بحرف ناقص، يلتقطه المدقق ويعيد المحاولة مع رسالة الخطأ.", do: s => {
+      s.unfocus({ at: "0%", dur: 0.5 });
+      s.bubble("bad", { text: "{ \"category\": \"refnd\" }", side: "a", x: 435, y: 725, w: 360, font: "mono", size: 22, color: "red" }, { at: "18%" });
+      s.box("msg", { x: 1035, y: 725, w: 540, h: 72, label: "Invalid enum: expected refund | shipping | other", size: 20, color: "orange", font: "ui" }, { at: "44%" });
+      s.link("bm", "bad", "msg", { color: "red" }, { at: "40%" });
+      s.link("rt", "msg", "v0", { color: "orange", bend: -0.22, label: "retry with error", lc: "orange", pulse: true }, { at: "66%" });
+      s.flow("msg", "v0", { color: "orange", bend: -0.22, at: "74%" });
     }},
-    { sec: "الرفض", say: "والرفض نتيجة مشروعة، لا خطأ تقني. اعرض للمستخدم رسالة واضحة.", do: s => {
+    { sec: "في الكود", say: "هكذا نكتب التحقق الآمن بـ safeParse: إن نجح نستخدم الكائن الموثّق، وإلا نعيد المحاولة أو نتراجع.", do: s => {
       s.clear({ dur: 0.4 });
-      s.box("rf", { x: 520, y: 540, w: 340, h: 120, label: "refusal", sub: "policy: can't help with that", icon: "hand", inline: true, color: "orange", size: 28 }, { at: 0.3 });
-      s.box("ui", { x: 1120, y: 540, w: 480, h: 140, label: "\"We can't do that here — contact support.\"", size: 22, color: "blue", icon: "browser" }, { at: 0.8 });
-      s.link("l2", "rf", "ui", { color: "orange" }, { at: 0.9 });
+      s.code("cd", { x: 800, y: 515, size: 23, title: "validate_ticket.ts", lines: [
+        "const raw = JSON.parse(output);",
+        "const parsed = Ticket.safeParse(raw);",
+        "if (!parsed.success) {",
+        "  return retryWith(parsed.error.message);",
+        "}",
+        "routeTicket(parsed.data); // typed & safe ✓"
+      ] }, { at: "8%", dur: 1.6 });
+      [1, 3, 5].forEach((h, i) => s.to("cd", { hl: h }, { at: (46 + i * 16) + "%", dur: 0.2 }));
     }},
-    { say: "والقاعدة: لا تثق أبدًا بمخرجات نموذج لم تتحقق منها.", eq: "@T{never trust unvalidated model output}", do: s => {
+    { say: "ومع Pydantic في Python نحصل على الميزة نفسها: أنواع مضمونة وإكمال تلقائي في المحرر.", do: s => {
+      s.to("cd", { x: 470, scale: 0.72, hl: 5 }, { at: "0%", dur: 0.6 });
+      s.box("obj", { x: 1180, y: 455, w: 430, h: 150, label: "Ticket(category='refund',\nurgent=True)", font: "mono", size: 22, color: "green" }, { at: "28%" });
+      s.badge("tp1", { text: "TypeScript → Zod ✓", x: 1055, y: 655, color: "blue", size: 22 }, { at: "58%" });
+      s.badge("tp2", { text: "Python → Pydantic ✓", x: 1320, y: 655, color: "teal", size: 22 }, { at: "74%" });
+    }},
+    { sec: "الرفض والأخطاء", say: "انتبه للفرق: رفض النموذج للسياسة Refusal نتيجة مشروعة، وليس خطأ JSON تعيد محاولته بلا نهاية.", eq: "@O{refusal} @neq @R{parse error}", do: s => {
       s.clear({ dur: 0.4 });
-      s.icon("sh", { name: "shieldok", x: 800, y: 540, s: 160, color: "green" }, { at: 0.3 });
+      s.box("rf", { x: 470, y: 440, w: 380, h: 120, label: "Model Refusal", sub: "policy: cannot fulfill request", icon: "hand", inline: true, color: "orange", size: 25 }, { at: "12%" });
+      s.box("ui", { x: 1130, y: 440, w: 480, h: 120, label: "\"We can't do that here — contact support.\"", icon: "browser", inline: true, size: 21, color: "blue" }, { at: "42%" });
+      s.link("l2", "rf", "ui", { color: "orange", label: "clear UX", lc: "orange", pulse: true }, { at: "38%" });
+      s.box("pe", { x: 470, y: 685, w: 380, h: 115, label: "Schema Failure", sub: "bad field / malformed JSON", icon: "bug", inline: true, color: "red", size: 25 }, { at: "60%" });
+      s.box("rt", { x: 1130, y: 685, w: 480, h: 115, label: "Retry (max 2) → safe fallback", icon: "refresh", inline: true, color: "gold", size: 23 }, { at: "74%" });
+      s.link("l3", "pe", "rt", { color: "gold", pulse: true }, { at: "72%" });
+    }},
+    { say: "ومع ذلك، ضع حدًا أقصى لمحاولات الإعادة؛ وإن استمر الفشل فانتقل لمسار بديل آمن أو لموظف بشري.", do: s => {
+      s.focus(["pe", "rt", "l3"], { zoom: 1.1, at: "8%", dur: 0.6 });
+      s.callout("fb", { text: "max_retries = 2  →  fallback: ESCALATE", x: 800, y: 825, color: "gold", icon: "shieldok" }, { at: "48%" });
+      s.unfocus({ at: "80%", dur: 0.55 });
+    }},
+    { say: "إياك أن تمرّر JSON غير متحقق منه إلى قاعدة البيانات أو تستخرج الحقول بـ Regex هشّ.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.versus("vs", "الخطأ الشائع ✗", "قاعدة الإنتاج ✓", { colors: ["red", "green"], y: 535, h: 490 }, { at: "8%" });
+      s.col("ms", ["Regex on prose output", "Trust JSON.parse blindly", "Retry infinitely on refusal"], { x: 440, y: 560, w: 450, size: 24, icons: ["x", "alert", "bug"], colors: ["red", "red", "red"] }, { at: "26%", st: 0.16 });
+      s.col("pr", ["Strict JSON Schema output", "Validate with Zod / Pydantic", "Retry with error + refusal UX"], { x: 1160, y: 560, w: 460, size: 24, icons: ["code", "shieldok", "check"], colors: ["green", "green", "green"] }, { at: "52%", st: 0.16 });
+    }},
+    { sec: "الخلاصة", say: "القاعدة الذهبية: لا تثق أبدًا بمخرجات نموذج لم تتحقق منها قبل دخول منطق العمل.", eq: "@T{never trust unvalidated model output}", do: s => {
+      s.clear({ dur: 0.4 });
+      s.chain("sum", ["JSON Schema", "Parse", "Zod / Pydantic", "Safe Logic"], { y: 500, gap: 62, w: 255, h: 150, size: 24, icons: ["doc", "code", "shieldok", "check"], colors: ["blue", "teal", "gold", "green"], pulse: true }, { at: "10%", st: 0.18 });
+      s.callout("gd", { text: "وتعامل مع الرفض Refusal كمسار UX طبيعي", x: 800, y: 720, color: "orange" }, { at: "70%" });
     }}
   ]);
 
   // ------------------------------------------------------------------ 2.3 Tool calling from first principles
   X.lesson("2.3", [
-    { sec: "وصف الأداة", say: "استدعاء الأدوات يبدأ بوصف: اسم، ووصف واضح، ومخطط مدخلات.", do: s => {
-      s.code("td", { x: 800, y: 520, size: 25, title: "tools", lines: ["{\"name\": \"get_order\",", " \"description\": \"Look up an order by its numeric id\",", " \"input_schema\": {", "   \"properties\": {\"order_id\": {\"type\": \"integer\"}}}}"] }, { at: 0.2, dur: 1.8 });
+    { sec: "لماذا الأدوات؟", say: "عميل يسأل: أين طلبي رقم 812؟ النموذج لا يستطيع فتح قاعدة بياناتك بنفسه.", do: s => {
+      s.bubble("q", { text: "Where is my order #812?", side: "u", x: 340, y: 520, w: 340, size: 24 }, { at: "0%" });
+      s.box("llm", { x: 800, y: 520, w: 230, h: 155, label: "LLM", icon: "brain", color: "purple", size: 28 }, { at: "20%" });
+      s.box("db", { x: 1260, y: 520, w: 240, h: 155, label: "Orders DB", icon: "db", color: "blue", size: 26 }, { at: "34%" });
+      s.link("l1", "q", "llm", { color: "blue", pulse: true }, { at: "26%" });
+      s.line("wall", { x1: 1030, y1: 390, x2: 1030, y2: 650, color: "red", dash: "8 6", w: 3.5 }, { at: "52%" });
+      s.badge("no", { text: "النموذج لا ينفّذ كودك مباشرة!", x: 1030, y: 715, color: "red", size: 22 }, { at: "68%" });
     }},
-    { sec: "الطلب", say: "والنموذج لا ينفّذ شيئًا؛ بل يعيد طلبًا مهيكلًا لاستدعاء الدالة.", eq: "@O{tool@_use}: @{ @T{name}, @; @T{input} @}", do: s => {
-      s.to("td", { y: 330, scale: 0.7 }, { dur: 0.6 });
-      s.box("llm", { x: 420, y: 620, w: 200, h: 140, label: "LLM", icon: "brain", color: "purple", size: 28 }, { at: 0.4 });
-      s.bubble("tu", { text: "tool_use: get_order({\"order_id\": 812})", side: "t", x: 980, y: 620, w: 560, font: "mono", size: 22 }, { at: 0.8 });
-      s.link("l1", "llm", "tu", { color: "orange" }, { at: 0.7 });
+    { say: "الحقيقة الأساسية: النموذج لا يُشغّل أي دالة؛ بل يُرسل طلبًا مهيكلًا، وتطبيقك هو من ينفّذ!", eq: "@P{LLM} @T{ requests} @quad @mid @quad @C{Your App} @T{ executes}", do: s => {
+      s.out(["wall", "no", "q", "l1"], { at: "0%", dur: 0.35 });
+      s.to("llm", { x: 340 }, { at: "10%", dur: 0.6 });
+      s.box("app", { x: 800, y: 520, w: 260, h: 155, label: "Your App", sub: "validates & runs", icon: "code", color: "teal", size: 26 }, { at: "26%" });
+      s.link("la", "llm", "app", { color: "orange", label: "tool_use", lc: "orange", pulse: true }, { at: "46%" });
+      s.link("ad", "app", "db", { color: "teal", label: "SQL query", lc: "teal", pulse: true }, { at: "64%" });
+      s.stream("llm", "app", { at: "56%", span: 1.5, every: 0.45, color: "orange" });
+      s.stream("app", "db", { at: "70%", span: 1.5, every: 0.45, color: "teal" });
     }},
-    { sec: "التحقق", say: "وتطبيقك يتحقق من المعاملات قبل التنفيذ، فقد تكون خاطئة.", do: s => {
-      s.clear({ keep: ["llm"] });
-      s.box("gate", { x: 800, y: 600, w: 200, h: 140, label: "validate", icon: "shieldok", color: "gold", size: 26 }, { at: 0.3 });
-      s.bubble("b1", { text: "order_id: \"eight-twelve\"", side: "t", x: 800, y: 360, w: 380, font: "mono", size: 22, color: "red" }, { at: 0.5 });
-      s.flow("b1", "gate", { color: "red", at: 0.9 });
-      s.box("rej", { x: 1200, y: 480, label: "reject", size: 26, color: "red", h: 56 }, { at: 1.4 });
-      s.bubble("b2", { text: "order_id: 812", side: "t", x: 1200, y: 780, w: 280, font: "mono", size: 22, color: "green" }, { at: 1.8 });
-    }},
-    { sec: "التنفيذ", say: "ثم ينفّذ الدالة، ويعيد النتيجة إلى النموذج.", eq: "@C{tool@_result} @to @T{LLM}", do: s => {
-      s.clear({ keep: ["llm"] });
-      s.box("fn", { x: 1150, y: 600, w: 260, h: 140, label: "get_order(812)", icon: "gear", font: "mono", size: 24, color: "teal" }, { at: 0.3 });
-      s.flow("llm", "fn", { color: "orange", at: 0.5 });
-      s.bubble("tr", { text: "tool_result: {\"status\": \"shipped\"}", side: "t", x: 800, y: 790, w: 500, font: "mono", size: 22, color: "teal" }, { at: 1.1 });
-      s.flow("fn", "llm", { color: "teal", at: 1.4, bend: 0.2 });
-    }},
-    { say: "وحتى الأخطاء تعود كنتائج أداة، ليقرأها النموذج ويتصرف.", do: s => {
-      s.out("tr", { dur: 0.3 });
-      s.bubble("te", { text: "tool_result: {\"error\": \"order not found\"}", side: "t", x: 800, y: 790, w: 540, font: "mono", size: 22, color: "red" }, { at: 0.3 });
-      s.bubble("ask", { text: "I couldn't find that order. Can you check the number?", side: "a", x: 760, y: 380, w: 560, color: "green" }, { at: 1.2 });
-    }},
-    { sec: "عدة أدوات", say: "وقد يطلب النموذج عدة أدوات في ردٍّ واحد؛ نفّذها جميعًا وأعد كل النتائج.", do: s => {
-      s.clear({ keep: ["llm"] });
-      ["get_order(812)", "get_order(813)", "get_customer(77)"].forEach((t, i) => { s.box("p" + i, { x: 1000, y: 400 + i * 130, w: 330, h: 70, label: t, font: "mono", size: 22, color: "orange" }, { at: 0.3 + i * 0.1 }); s.link("pl" + i, "llm", "p" + i, { color: "orange", w: 2 }, { at: 0.4 + i * 0.1 }); s.box("r" + i, { x: 1370, y: 400 + i * 130, w: 140, h: 60, label: "result", size: 22, color: "teal" }, { at: 1.2 + i * 0.1 }); s.link("rl" + i, "p" + i, "r" + i, { color: "teal", w: 2 }, { at: 1.1 + i * 0.1 }); });
-    }},
-    { say: "إذن: صِف، ثم استقبل الطلب، ثم تحقق، ثم نفّذ، ثم أعد النتيجة.", do: s => {
+    { sec: "الخطوات الخمس", say: "أولًا: نصف الأداة للنموذج بثلاثة أشياء: اسم واضح، ووصف، ومخطط مدخلات input_schema.", do: s => {
       s.clear({ dur: 0.4 });
-      s.chain("f", ["describe", "tool_use", "validate", "execute", "tool_result"], { y: 540, gap: 44, colors: ["blue", "orange", "gold", "teal", "green"], h: 84, size: 24 }, { at: 0.3, st: 0.2 });
+      s.code("td", { x: 800, y: 515, size: 23, title: "tools.json", lines: [
+        "{ \"name\": \"get_order\",",
+        "  \"description\": \"Look up an order by its numeric id\",",
+        "  \"input_schema\": {",
+        "    \"type\": \"object\",",
+        "    \"properties\": {\"order_id\": {\"type\": \"integer\"}},",
+        "    \"required\": [\"order_id\"] } }"
+      ] }, { at: "8%", dur: 1.5 });
+      [0, 1, 4].forEach((h, i) => s.to("td", { hl: h }, { at: (46 + i * 16) + "%", dur: 0.2 }));
+    }},
+    { say: "ثانيًا: يرد النموذج بكتلة tool_use تحمل الاسم والمعاملات، ويتوقف بسبب tool_use.", eq: "@O{tool@_use}: @{ @T{name}: get@_order, @; @T{input}: @{order@_id: 812@} @}", do: s => {
+      s.to("td", { y: 325, scale: 0.65, hl: -1 }, { at: "0%", dur: 0.6 });
+      s.box("llm", { x: 390, y: 655, w: 210, h: 145, label: "LLM", icon: "brain", color: "purple", size: 28 }, { at: "20%" });
+      s.bubble("tu", { text: "tool_use: get_order({\"order_id\": 812})", side: "t", x: 1015, y: 635, w: 580, font: "mono", size: 22 }, { at: "42%" });
+      s.link("l1", "llm", "tu", { color: "orange", pulse: true }, { at: "38%" });
+      s.badge("sr", { text: "stop_reason: tool_use", x: 1015, y: 760, color: "orange", size: 22 }, { at: "72%" });
+    }},
+    { say: "ثالثًا: تطبيقك يتحقق من المعاملات قبل التنفيذ؛ فقد يولّد النموذج نصًا بدل رقم!", do: s => {
+      s.clear({ keep: ["llm"] });
+      s.to("llm", { x: 300, y: 540 }, { at: "0%", dur: 0.5 });
+      s.box("gate", { x: 760, y: 540, w: 240, h: 150, label: "Validate Args", icon: "shieldok", color: "gold", size: 24 }, { at: "14%" });
+      s.bubble("b1", { text: "order_id: \"eight-twelve\"", side: "t", x: 760, y: 315, w: 390, font: "mono", size: 21, color: "red" }, { at: "32%" });
+      s.link("lb1", "b1", "gate", { color: "red" }, { at: "38%" });
+      s.box("rej", { x: 1230, y: 400, w: 280, h: 74, label: "Reject + fix ✗", size: 23, color: "red" }, { at: "52%" });
+      s.link("gr", "gate", "rej", { color: "red" }, { at: "50%" });
+      s.box("ok", { x: 1230, y: 655, w: 300, h: 78, label: "order_id: 812  ✓", font: "mono", size: 22, color: "green" }, { at: "70%" });
+      s.link("go", "gate", "ok", { color: "green", pulse: true }, { at: "68%" });
+    }},
+    { say: "رابعًا: ننفّذ الدالة الفعلية، ثم نعيد tool_result إلى النموذج ليصيغ الإجابة النهائية.", eq: "@C{tool@_result} @to @P{LLM} @to @G{final answer}", do: s => {
+      s.clear({ keep: ["llm"] });
+      s.box("fn", { x: 820, y: 465, w: 290, h: 145, label: "get_order(812)", icon: "gear", font: "mono", size: 23, color: "teal" }, { at: "10%" });
+      s.link("lf", "llm", "fn", { color: "orange", label: "call", lc: "orange", pulse: true }, { at: "20%" });
+      s.bubble("tr", { text: "tool_result: {\"status\": \"shipped\", \"eta\": \"Fri\"}", side: "t", x: 820, y: 715, w: 590, font: "mono", size: 21, color: "teal" }, { at: "46%" });
+      s.link("rt", "fn", "tr", { color: "teal" }, { at: "42%" });
+      s.link("tl", "tr", "llm", { color: "teal", bend: 0.2, pulse: true }, { at: "56%" });
+      s.bubble("ans", { text: "Your order #812 shipped and arrives Friday!", side: "a", x: 1320, y: 465, w: 380, size: 22, color: "green" }, { at: "74%" });
+      s.link("la", "fn", "ans", { color: "green" }, { at: "72%" });
+    }},
+    { sec: "الأخطاء والتوازي", say: "وحتى لو فشلت الأداة، أعد الخطأ كـ tool_result منظّم، فيقرؤه النموذج ويتعامل بذكاء بدل الانهيار.", do: s => {
+      s.out(["tr", "rt", "tl", "ans", "la"], { at: "0%", dur: 0.35 });
+      s.bubble("te", { text: "tool_result: {\"is_error\": true, \"msg\": \"order #812 not found\"}", side: "t", x: 820, y: 715, w: 660, font: "mono", size: 20, color: "red" }, { at: "20%" });
+      s.link("e1", "fn", "te", { color: "red" }, { at: "18%" });
+      s.link("e2", "te", "llm", { color: "orange", bend: 0.2, pulse: true }, { at: "34%" });
+      s.bubble("ask", { text: "I couldn't find order #812 — could you double-check the number?", side: "a", x: 1300, y: 465, w: 420, size: 22, color: "green" }, { at: "64%" });
+      s.mark("mk", "ask", "check", { at: "80%" });
+    }},
+    { say: "وقد يطلب النموذج عدة أدوات بالتوازي في رد واحد؛ نفّذها جميعًا وأعد كل نتائجها بترتيب معرّفاتها.", eq: "@O{tool@_use}_{1..k} @; @Longrightarrow @; @C{tool@_result}_{1..k}", do: s => {
+      s.clear({ keep: ["llm"] });
+      ["get_order(812)", "get_order(813)", "get_customer(77)"].forEach((t, i) => {
+        s.box("p" + i, { x: 850, y: 365 + i * 165, w: 340, h: 78, label: t, font: "mono", size: 22, color: "orange" }, { at: (12 + i * 10) + "%" });
+        s.link("pl" + i, "llm", "p" + i, { color: "orange", w: 2.5, pulse: true }, { at: (16 + i * 10) + "%" });
+        s.box("r" + i, { x: 1310, y: 365 + i * 165, w: 240, h: 72, label: "result #" + (i + 1) + " ✓", size: 22, color: "teal" }, { at: (52 + i * 10) + "%" });
+        s.link("rl" + i, "p" + i, "r" + i, { color: "teal", w: 2.5, pulse: true }, { at: (48 + i * 10) + "%" });
+      });
+    }},
+    { sec: "في الكود", say: "وفي الكود تبدو حلقة الأداة واضحة: استدعِ النموذج، تحقق من المعاملات، نفّذ، وألحق النتيجة بالرسائل.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.code("lp", { x: 800, y: 515, size: 22, title: "tool_loop.py", lines: [
+        "if resp.stop_reason == \"tool_use\":",
+        "    for call in resp.tool_calls:",
+        "        args = OrderInput.model_validate(call.input)",
+        "        res  = safe_run(call.name, args)",
+        "        msgs.append({\"role\": \"user\", \"tool_result\": res})"
+      ] }, { at: "8%", dur: 1.5 });
+      [0, 2, 3, 4].forEach((h, i) => s.to("lp", { hl: h }, { at: (44 + i * 13) + "%", dur: 0.2 }));
+    }},
+    { say: "وكل خطوة لها بصمة واضحة في التتبّع: زمن النموذج، وزمن التحقق، وزمن تنفيذ قاعدة البيانات.", do: s => {
+      s.to("lp", { y: 345, scale: 0.72, hl: -1 }, { at: "0%", dur: 0.55 });
+      s.bars("tr", [
+        ["LLM → tool_use", 0.46, "purple", "480 ms"],
+        ["Validate + SQL", 0.14, "teal", "65 ms"],
+        ["LLM → final reply", 0.55, "green", "540 ms"]
+      ], { x: 560, y: 690, w: 560, gap: 66, size: 24, h: 28 }, { at: "26%" });
+    }},
+    { say: "أخطر خطأ هو تمرير معاملات النموذج مباشرة إلى SQL أو API دون تحقق؛ فالنموذج ليس مصدرًا موثوقًا.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.versus("vs", "الخطأ الخطير ✗", "قاعدة الإنتاج ✓", { colors: ["red", "green"], y: 535, h: 480 }, { at: "8%" });
+      s.col("ms", ["Execute raw args without validation", "Crash app when tool throws error", "Ignore parallel tool calls"], { x: 440, y: 560, w: 480, size: 23, icons: ["alert", "x", "bug"], colors: ["red", "red", "red"] }, { at: "26%", st: 0.16 });
+      s.col("pr", ["Validate schema + permissions first", "Return structured is_error results", "Run all requested calls + match IDs"], { x: 1160, y: 560, w: 480, size: 23, icons: ["shieldok", "check", "bolt"], colors: ["green", "green", "green"] }, { at: "52%", st: 0.16 });
+    }},
+    { sec: "الخلاصة", say: "إذن دورة استدعاء الأدوات خمس خطوات ثابتة: صِف، استقبل، تحقّق، نفّذ، وأعد النتيجة.", eq: "@B{describe} @to @O{tool@_use} @to @Y{validate} @to @C{execute} @to @G{tool@_result}", do: s => {
+      s.clear({ dur: 0.4 });
+      s.chain("f", ["Describe", "tool_use", "Validate", "Execute", "tool_result"], { y: 525, gap: 40, w: 225, h: 145, size: 23, icons: ["doc", "brain", "shieldok", "gear", "send"], colors: ["blue", "orange", "gold", "teal", "green"], pulse: true }, { at: "10%", st: 0.16 });
     }}
   ]);
 
   // ------------------------------------------------------------------ 3.1 Success criteria first
   X.lesson("3.1", [
-    { sec: "قبل الأمر", say: "الصياغة الجيدة تبدأ قبل كتابة الأمر: بمعايير نجاح قابلة للقياس.", do: s => {
-      s.icon("tg", { name: "target", x: 800, y: 470, s: 160, color: "gold" });
-      s.note("tl", { text: "success criteria", x: 800, y: 600, font: "math", color: "gold", size: 32 }, { at: 0.5 });
+    { sec: "فخ الانطباعات", say: "كثير من الفرق تعدّل الأمر بالحدس: غيّرنا جملة، وبدا الرد أجمل في مثالين، فهيا نطلقه!", do: s => {
+      s.box("p1", { x: 420, y: 495, w: 320, h: 120, label: "Prompt tweak", sub: "\"be super friendly!\"", icon: "pencil", color: "blue", size: 24 }, { at: "0%" });
+      s.bubble("ex1", { text: "Test #1: looks nice! ✓", side: "a", x: 960, y: 410, w: 340, size: 23, color: "green" }, { at: "34%" });
+      s.bubble("ex2", { text: "Test #2: seems fine! ✓", side: "a", x: 960, y: 580, w: 340, size: 23, color: "green" }, { at: "50%" });
+      s.link("l1", "p1", "ex1", { color: "dim" }, { at: "30%" });
+      s.link("l2", "p1", "ex2", { color: "dim" }, { at: "46%" });
+      s.badge("sh", { text: "Ship to prod!", x: 1340, y: 495, color: "orange", size: 24 }, { at: "74%" });
     }},
-    { say: "مثلًا: تصنيف صحيح في 95 بالمئة على الأقل، ونبرة مهذبة، وبلا سياسات مختلَقة.", eq: "@T{accuracy} @ge 95@% @; @land @; @T{polite} @; @land @; @T{no invented policy}", do: s => {
-      s.to(["tg", "tl"], { x: v => v - 420 }, { dur: 0.6 });
-      s.col("cr", ["classification ≥ 95%", "polite tone", "no invented policies"], { x: 1000, y: 540, size: 30, icons: ["chart", "chat", "shieldok"], colors: ["gold", "blue", "green"], w: 480 }, { at: 0.5, st: 0.25 });
+    { say: "وفي الإنتاج ينكسر الأمر على 15 تذكرة حقيقية؛ لأن الانطباع الشخصي ليس قياسًا هندسيًا!", do: s => {
+      s.focus("sh", { zoom: 1.1, at: "0%", dur: 0.45 });
+      s.out(["ex1", "ex2", "l1", "l2"], { at: "14%", dur: 0.35 });
+      s.unfocus({ at: "18%", dur: 0.5 });
+      s.grid("brk", ["refund typo ✗", "invented 90d ✗", "rude tone ✗", "prompt inject ✗", "missed order ✗", "wrong lang ✗"], { cols: 3, x: 960, y: 515, cw: 235, ch: 92, size: 21, colors: ["red", "red", "orange", "red", "orange", "red"] }, { at: "30%", st: 0.08 });
+      s.callout("vb", { text: "Vibe-checking ≠ Engineering", x: 800, y: 740, color: "red", icon: "alert" }, { at: "76%" });
     }},
-    { sec: "حالات الاختبار", say: "ثم نجمع حالات اختبار من الاستخدام الحقيقي، لا من خيالنا.", do: s => {
+    { sec: "معايير النجاح", say: "لذا تبدأ الصياغة الجيدة قبل كتابة أول كلمة في الأمر: بتعريف معايير نجاح قابلة للقياس.", eq: "@T{accuracy} @ge 95@% @; @land @; @T{polite} @; @land @; @T{0 invented policies}", do: s => {
       s.clear({ dur: 0.4 });
-      s.icon("inb", { name: "inbox", x: 360, y: 520, s: 110, color: "blue" }, { at: 0.3 });
-      s.note("il", { text: "real tickets", x: 360, y: 610, font: "math" }, { at: 0.4 });
-      s.zone("ts", { x: 1020, y: 530, w: 620, h: 420, label: "test set", color: "gold" }, { at: 0.5 });
-      for (let i = 0; i < 8; i++) s.box("c" + i, { x: 860 + (i % 4) * 106, y: 470 + Math.floor(i / 4) * 110, w: 86, h: 70, label: "", color: "soft" }, { at: 0.8 + i * 0.08 });
-      s.flow("inb", "ts", { n: 4, color: "blue", gap: 0.2, at: 0.6 });
+      s.icon("tg", { name: "target", x: 370, y: 500, s: 150, color: "gold" }, { at: "10%" });
+      s.note("tl", { text: "Success Criteria", x: 370, y: 625, font: "math", color: "gold", size: 30 }, { at: "18%" });
+      s.col("cr", ["Category accuracy ≥ 95%", "Warm & polite tone ≥ 98%", "Zero invented refund policies"], { x: 1020, y: 525, size: 26, icons: ["chart", "chat", "shieldok"], colors: ["gold", "blue", "green"], w: 540, h: 80 }, { at: "34%", st: 0.2 });
     }},
-    { say: "ونضمّنها حالات صعبة وطرفية وخبيثة.", do: s => {
-      [4, 5].forEach(i => s.to("c" + i, { stroke: "gold" }, { at: 0.2 })); [6, 7].forEach(i => s.to("c" + i, { stroke: "red" }, { at: 0.4 }));
-      s.note("k0", { text: "normal", x: 860, y: 690, color: "soft", font: "math", size: 22 }, { at: 0.5 }); s.note("k1", { text: "edge", x: 1020, y: 690, color: "gold", font: "math", size: 22 }, { at: 0.6 }); s.note("k2", { text: "adversarial", x: 1180, y: 690, color: "red", font: "math", size: 22 }, { at: 0.7 });
-    }},
-    { sec: "درجة الأساس", say: "نشغّل الأمر الحالي عليها، فنحصل على درجة أساس.", do: s => {
+    { sec: "مجموعة الاختبار", say: "الخطوة الثانية: نجمع مجموعة اختبار من تذاكر الاستخدام الحقيقي، لا من خيال المطوّر فقط.", do: s => {
       s.clear({ dur: 0.4 });
-      s.bars("sc", [["prompt v1", 0.82, "dim", "82%  baseline"]], { x: 620, y: 420, w: 600, size: 30, h: 36 }, { at: 0.3 });
+      s.icon("inb", { name: "inbox", x: 320, y: 515, s: 115, color: "blue" }, { at: "8%" });
+      s.note("il", { text: "Real user tickets", x: 320, y: 615, font: "math", size: 26 }, { at: "16%" });
+      s.zone("ts", { x: 1020, y: 525, w: 680, h: 420, label: "Evaluation Test Set (120 cases)", color: "gold" }, { at: "26%" });
+      for (let i = 0; i < 8; i++) {
+        s.box("c" + i, { x: 830 + (i % 4) * 126, y: 470 + Math.floor(i / 4) * 118, w: 102, h: 78, label: "#" + (i + 1), size: 22, color: "soft" }, { at: (40 + i * 5) + "%" });
+      }
+      s.stream("inb", "ts", { at: "34%", span: 1.8, every: 0.45, color: "blue" });
     }},
-    { say: "وكل تعديل على الأمر نقارنه بهذه الدرجة.", eq: "@Delta = @T{score}(v_{2}) - @T{score}(v_{1})", do: s => {
-      s.bars("v2", [["prompt v2", 0.91, "green", "91%  ✓ ship"]], { x: 620, y: 540, w: 600, size: 30, h: 36 }, { at: 0.3 });
-      s.bars("v3", [["prompt v3", 0.78, "red", "78%  ✗ reject"]], { x: 620, y: 660, w: 600, size: 30, h: 36 }, { at: 0.8 });
+    { say: "ونوزّعها على ثلاثة أنواع: حالات عادية، وحالات طرفية صعبة، وهجمات خبيثة لحقن التعليمات.", do: s => {
+      [0, 1, 2, 3].forEach(i => s.to("c" + i, { stroke: "teal" }, { at: "14%", dur: 0.4 }));
+      [4, 5].forEach(i => s.to("c" + i, { stroke: "gold" }, { at: "40%", dur: 0.4 }));
+      [6, 7].forEach(i => s.to("c" + i, { stroke: "red" }, { at: "64%", dur: 0.4 }));
+      s.badge("k0", { text: "Normal (50%)", x: 780, y: 775, color: "teal", size: 22 }, { at: "24%" });
+      s.badge("k1", { text: "Edge Cases (30%)", x: 1030, y: 775, color: "gold", size: 22 }, { at: "48%" });
+      s.badge("k2", { text: "Adversarial (20%)", x: 1290, y: 775, color: "red", size: 22 }, { at: "72%" });
     }},
-    { say: "هكذا يصبح كل تغيير قرارًا مقيسًا، لا انطباعًا.", do: s => {
-      s.pulse(["v20"], { color: "green" });
+    { sec: "درجة الأساس", say: "الخطوة الثالثة: نشغّل الأمر الأول v1 على كل الحالات لنسجّل درجة الأساس Baseline.", eq: "@T{baseline} = @T{score}(v_{1}) = 82@%", do: s => {
+      s.clear({ dur: 0.4 });
+      s.bars("sc", [["prompt v1 (baseline)", 0.82, "dim", "82%  ·  98 / 120"]], { x: 580, y: 405, w: 580, size: 28, h: 40 }, { at: "14%" });
+      s.callout("bn", { text: "هذه النقطة المرجعية التي نحكم بها على كل تعديل لاحق", x: 800, y: 560, color: "gold" }, { at: "58%" });
+    }},
+    { say: "ثم نقارن كل نسخة جديدة بالأساس نفسه: v2 ارتفعت إلى 91% فنعتمدها، بينما v3 تراجعت فنرفضها!", eq: "@Delta = @T{score}(v_{\\text{new}}) - @T{score}(v_{1})", do: s => {
+      s.out("bn", { at: "0%", dur: 0.3 });
+      s.bars("v2", [["prompt v2 (+examples)", 0.91, "green", "91%  (+9%) ✓ ship"]], { x: 580, y: 530, w: 580, size: 28, h: 40 }, { at: "18%" });
+      s.bars("v3", [["prompt v3 (verbose)", 0.78, "red", "78%  (-4%) ✗ reject"]], { x: 580, y: 655, w: 580, size: 28, h: 40 }, { at: "54%" });
+      s.pulse("v20", { at: "76%", color: "green" });
+    }},
+    { sec: "التفصيل والكود", say: "لا تنظر للمتوسط وحده؛ افحص النتائج حسب الشريحة، فربما تتحسن العادية وتنهار الهجومية!", do: s => {
+      s.clear({ dur: 0.4 });
+      s.matrix("tb", { data: [
+        ["Version", "Normal", "Edge", "Adversarial", "Decision"],
+        ["v1 baseline", "92%", "75%", "64%", "baseline"],
+        ["v2 structured", "97%", "89%", "86%", "SHIP ✓"],
+        ["v3 chatty", "94%", "70%", "48%", "REJECT ✗"]
+      ], x: 800, y: 515, cw: 235, ch: 78, size: 24, font: "ui" }, { at: "10%" });
+      s.to("tb", { hi: 2 }, { at: "48%", dur: 0.25 });
+      s.to("tb", { hi: 3 }, { at: "74%", dur: 0.25 });
+    }},
+    { say: "وبسكربت تقييم بسيط من 5 أسطر، تقيس كل تعديل على الأمر تلقائيًا في ثوانٍ.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.code("ev", { x: 800, y: 515, size: 23, title: "run_eval.py", lines: [
+        "def eval_prompt(prompt_fn, dataset):",
+        "    passed = 0",
+        "    for case in dataset:",
+        "        out = prompt_fn(case.ticket)",
+        "        passed += check_criteria(out, case.expected)",
+        "    return passed / len(dataset)  # compare vs baseline"
+      ] }, { at: "8%", dur: 1.5 });
+      [0, 3, 4, 5].forEach((h, i) => s.to("ev", { hl: h }, { at: (44 + i * 13) + "%", dur: 0.2 }));
+    }},
+    { say: "تجنّب كتابة 3 أمثلة خيالية سهلة؛ الاختبار الحقيقي يكشف الحالات القاسية التي يرسلها العملاء فعلًا.", do: s => {
+      s.to("ev", { y: 340, scale: 0.72, hl: -1 }, { at: "0%", dur: 0.55 });
+      s.box("ms", { x: 460, y: 690, w: 510, h: 145, label: "الخطأ: 3 أمثلة سهلة من خيالك", sub: "misses typos, slang & attacks", icon: "alert", color: "red", size: 22 }, { at: "24%" });
+      s.box("pr", { x: 1140, y: 690, w: 510, h: 145, label: "الإنتاج: تذاكر حقيقية + طرفية + خبيثة", sub: "real logs · baseline · delta gate", icon: "shieldok", color: "green", size: 22 }, { at: "54%" });
+      s.link("mp", "ms", "pr", { color: "green", pulse: true }, { at: "74%" });
+    }},
+    { say: "وعندما تصبح التعديلات محكومة بدرجة الأساس، يتوقف الجدل وتتكلم البيانات.", do: s => {
+      s.out(["ev", "ms", "pr", "mp"], { at: "0%", dur: 0.35 });
+      s.ring("lp", { x: 800, y: 525, r: 165, color: "teal", arrows: 3, speed: 24 }, { at: "14%" });
+      ["Edit prompt", "Run 120 cases", "Ship if Δ > 0"].forEach((t, i) => {
+        const a = (-90 + i * 120) * Math.PI / 180;
+        s.box("n" + i, { x: 800 + Math.cos(a) * 185, y: 525 + Math.sin(a) * 165, w: 235, h: 66, label: t, size: 23, color: ["blue", "gold", "green"][i], fill: "bg" }, { at: (28 + i * 16) + "%" });
+      });
+    }},
+    { sec: "الخلاصة", say: "إذن الصياغة الاحترافية أربع خطوات: معايير واضحة، وحالات حقيقية، وأساس، وتحسين مقيس.", eq: "@Y{Criteria} @to @B{Real Tests} @to @M{Baseline} @to @G{Measured Iteration}", do: s => {
+      s.clear({ dur: 0.4 });
+      s.chain("sum", ["Criteria", "Real Tests", "Baseline", "Iterate + Δ"], { y: 525, gap: 65, w: 255, h: 150, size: 24, icons: ["target", "inbox", "chart", "trend"], colors: ["gold", "blue", "teal", "green"], pulse: true }, { at: "10%", st: 0.18 });
     }}
   ]);
 
   // ------------------------------------------------------------------ 3.2 Prompt writing
   X.lesson("3.2", [
-    { sec: "الوضوح", say: "الأمر القوي واضح ومباشر: يقول ماذا تفعل، لا ماذا تتجنب فقط.", do: s => {
-      s.code("bad", { x: 440, y: 520, size: 22, title: "vague", lines: ["Don't be rude.", "Don't make things up.", "Don't be too long."] }, { at: 0.2, dur: 1 });
-      s.code("good", { x: 1160, y: 520, size: 22, title: "clear", lines: ["Reply in 3 short sentences.", "Use a warm, polite tone.", "Quote only the policy text."] }, { at: 0.8, dur: 1.2 });
-      s.mark("m1", "bad", "x", { at: 1.2 }); s.mark("m2", "good", "check", { at: 2.1 });
+    { sec: "لماذا يفشل الغموض؟", say: "عميل يشتكي: طلبي وصل مكسورًا بعد 20 يومًا. فتُعطى المهمة لأمر غامض مليء بالنواهي فقط.", do: s => {
+      s.bubble("tk", { text: "user: My item arrived broken after 20 days!", side: "u", x: 370, y: 495, w: 400, size: 23 }, { at: "0%" });
+      s.code("bad", { x: 1050, y: 495, size: 23, title: "vague_prompt.txt", lines: [
+        "Be helpful to customers.",
+        "Don't be rude.",
+        "Don't make things up.",
+        "Don't write too much."
+      ] }, { at: "30%", dur: 1.3 });
+      s.link("l0", "tk", "bad", { color: "orange", pulse: true }, { at: "26%" });
+      s.mark("bx", "bad", "x", { at: "78%" });
     }},
-    { sec: "الأمثلة", say: "والأمثلة توضّح الصيغة والنبرة بدقة أكبر من أي وصف.", eq: "@T{few-shot}: @; (x_1, y_1), @; (x_2, y_2) @; @to @; y", do: s => {
+    { say: "النتيجة: رد طويل متذبذب يختلق ضمان 90 يومًا غير موجود أصلًا، لأنك لم تحدد ماذا يفعل بدقة!", do: s => {
+      s.out(["tk", "l0"], { at: "0%", dur: 0.35 });
+      s.to(["bad", "bx"], { x: v => v - 560, scale: 0.8 }, { at: "8%", dur: 0.6 });
+      s.bubble("wr", { text: "So sorry!! Our 90-day full replacement warranty covers broken items, just send it back anytime and we will...", side: "a", x: 1120, y: 495, w: 500, size: 23, color: "red" }, { at: "30%" });
+      s.badge("h1", { text: "اختلق سياسة 90 يومًا ✗", x: 960, y: 690, color: "red", size: 22 }, { at: "62%" });
+      s.badge("h2", { text: "نبرة وطول غير منضبطين ✗", x: 1270, y: 690, color: "orange", size: 22 }, { at: "78%" });
+    }},
+    { sec: "الوضوح والأمثلة", say: "القاعدة الأولى: كن واضحًا ومباشرًا؛ قل للنموذج ماذا يفعل بالضبط، لا ماذا يتجنب فقط.", do: s => {
       s.clear({ dur: 0.4 });
-      [0, 1].forEach(i => { s.box("ex" + i, { x: 440, y: 420 + i * 150, w: 300, h: 70, label: "ticket " + (i + 1), size: 24, color: "blue" }, { at: 0.3 + i * 0.3 }); s.box("ey" + i, { x: 1000, y: 420 + i * 150, w: 380, h: 70, label: "ideal reply " + (i + 1), size: 24, color: "green" }, { at: 0.4 + i * 0.3 }); s.link("el" + i, "ex" + i, "ey" + i, { color: "dim" }, { at: 0.5 + i * 0.3 }); });
-      s.box("nx", { x: 440, y: 720, w: 300, h: 70, label: "new ticket", size: 24, color: "gold" }, { at: 1.2 });
-      s.box("ny", { x: 1000, y: 720, w: 380, h: 70, label: "reply in the same style", size: 24, color: "gold", dash: "8 6" }, { at: 1.5 });
-      s.link("nl", "nx", "ny", { color: "gold" }, { at: 1.4 });
+      s.code("v1", { x: 430, y: 520, size: 22, title: "negative & vague ✗", lines: ["Don't be rude.", "Don't make things up.", "Don't be too long."] }, { at: "10%", dur: 1.0 });
+      s.code("v2", { x: 1140, y: 520, size: 22, title: "positive & clear ✓", lines: ["Reply in 3 short sentences.", "Use a warm, polite tone.", "Quote ONLY the policy text."] }, { at: "42%", dur: 1.2 });
+      s.mark("m1", "v1", "x", { at: "36%" });
+      s.mark("m2", "v2", "check", { at: "78%" });
+      s.link("ar", "v1", "v2", { color: "green", pulse: true }, { at: "46%" });
     }},
-    { sec: "الوسوم", say: "وافصل الأقسام بوسوم واضحة، مثل policy وticket.", do: s => {
+    { say: "القاعدة الثانية: الأمثلة القليلة Few-Shot تضبط الصيغة والنبرة أدق من صفحة كاملة من الشرح.", eq: "@T{few-shot}: @; (x_1, y_1), @; (x_2, y_2) @; @to @; y", do: s => {
       s.clear({ dur: 0.4 });
-      s.code("p", { x: 800, y: 520, size: 26, title: "prompt.xml", lines: ["<policy>{{refund_policy}}</policy>", "<ticket>{{customer_message}}</ticket>", "Draft a polite reply using ONLY the policy.", "If the policy does not cover the case, reply: ESCALATE."] }, { at: 0.3, dur: 2 });
+      [0, 1].forEach(i => {
+        s.box("ex" + i, { x: 440, y: 385 + i * 145, w: 320, h: 74, label: "Ticket example " + (i + 1), size: 23, color: "blue" }, { at: (10 + i * 20) + "%" });
+        s.box("ey" + i, { x: 1050, y: 385 + i * 145, w: 430, h: 74, label: "Ideal 3-sentence reply " + (i + 1), size: 23, color: "green" }, { at: (18 + i * 20) + "%" });
+        s.link("el" + i, "ex" + i, "ey" + i, { color: "dim", pulse: true }, { at: (22 + i * 20) + "%" });
+      });
+      s.box("nx", { x: 440, y: 695, w: 320, h: 76, label: "New customer ticket", size: 23, color: "gold" }, { at: "58%" });
+      s.box("ny", { x: 1050, y: 695, w: 430, h: 76, label: "Matches exact style & tone ✓", size: 23, color: "gold", dash: "8 6" }, { at: "74%" });
+      s.link("nl", "nx", "ny", { color: "gold", pulse: true }, { at: "68%" });
     }},
-    { say: "فيعرف النموذج أين التعليمات، وأين البيانات.", do: s => {
-      s.to("p", { hl: 0 }, { at: 0.2, dur: 0.2 }); s.to("p", { hl: 1 }, { at: 1, dur: 0.2 }); s.to("p", { hl: 2 }, { at: 1.8, dur: 0.2 });
-    }},
-    { sec: "الخطة البديلة", say: "وأضف خطة بديلة: إن لم تغطِّ السياسة الحالة، حوّلها إلى موظف بشري.", do: s => {
-      s.to("p", { hl: 3, y: 360, scale: 0.8 }, { dur: 0.6 });
-      s.box("q", { x: 800, y: 580, w: 280, h: 70, label: "policy covers it?", size: 24, color: "gold" }, { at: 0.5 });
-      s.box("yes", { x: 500, y: 760, w: 260, h: 64, label: "draft reply", size: 24, color: "green" }, { at: 0.9 });
-      s.box("no", { x: 1100, y: 760, w: 300, h: 64, label: "ESCALATE → human", font: "mono", size: 22, color: "orange", icon: "user", inline: true }, { at: 1.1 });
-      s.link("ly", "q", "yes", { color: "green", label: "yes" }, { at: 0.9 }); s.link("ln", "q", "no", { color: "orange", label: "no" }, { at: 1.1 });
-    }},
-    { say: "وهكذا يصبح الأمر قالبًا منظّمًا، لا فقرة عشوائية.", do: s => {
+    { sec: "الوسوم والبديل", say: "القاعدة الثالثة: افصل التعليمات عن البيانات بوسوم XML واضحة مثل policy وticket.", eq: "@Y{<policy>} @dots @Y{</policy>} @quad @C{<ticket>} @dots @C{</ticket>}", do: s => {
       s.clear({ dur: 0.4 });
-      s.col("pt", ["role & goal", "clear instructions", "examples", "<policy> data </policy>", "<ticket> input </ticket>", "fallback: ESCALATE"], { x: 800, y: 540, size: 24, gap: 10, h: 54, w: 520, colors: ["purple", "blue", "green", "gold", "teal", "orange"] }, { at: 0.3, st: 0.15 });
+      s.code("p", { x: 800, y: 500, size: 24, title: "support_prompt.xml", lines: [
+        "<policy>{{refund_policy}}</policy>",
+        "<ticket>{{customer_message}}</ticket>",
+        "Draft a polite 3-sentence reply using ONLY <policy>.",
+        "If <policy> does not cover the case, reply: ESCALATE."
+      ] }, { at: "8%", dur: 1.6 });
+      s.to("p", { hl: 0 }, { at: "48%", dur: 0.2 });
+      s.to("p", { hl: 1 }, { at: "66%", dur: 0.2 });
+      s.to("p", { hl: 2 }, { at: "80%", dur: 0.2 });
+    }},
+    { say: "هكذا يميّز النموذج بوضوح: أين حقائق السياسة الموثوقة، وأين كلام العميل، وأين أوامرك.", do: s => {
+      s.to("p", { y: 355, scale: 0.78, hl: -1 }, { at: "0%", dur: 0.55 });
+      s.grid("tg", ["<policy>\ntrusted facts", "<ticket>\nuntrusted input", "Instructions\nexact rules"], { cols: 3, y: 660, cw: 330, ch: 135, size: 24, colors: ["gold", "teal", "blue"] }, { at: "26%", st: 0.18 });
+      s.pulse("tg0", { at: "74%", color: "gold" });
+    }},
+    { say: "القاعدة الرابعة: أضف خطة بديلة Fallback؛ إن لم تغطِّ السياسة الحالة، يحوّلها فورًا لموظف بشري.", eq: "@T{uncovered case} @Rightarrow @O{ESCALATE}", do: s => {
+      s.out("tg*", { at: "0%", dur: 0.35 });
+      s.to("p", { hl: 3 }, { at: "10%", dur: 0.2 });
+      s.box("q", { x: 800, y: 565, w: 320, h: 74, label: "Policy covers 20-day claim?", size: 23, color: "gold" }, { at: "24%" });
+      s.box("yes", { x: 470, y: 745, w: 280, h: 72, label: "Draft polite reply ✓", size: 23, color: "green" }, { at: "50%" });
+      s.box("no", { x: 1130, y: 745, w: 340, h: 72, label: "ESCALATE → Human", font: "mono", size: 22, color: "orange", icon: "user", inline: true }, { at: "64%" });
+      s.link("ly", "q", "yes", { color: "green", label: "yes", lc: "green" }, { at: "48%" });
+      s.link("ln", "q", "no", { color: "orange", label: "no", lc: "orange", pulse: true }, { at: "62%" });
+      s.pulse("no", { at: "80%", color: "orange" });
+    }},
+    { sec: "اختبار حي", say: "جرّب الأمر المنظّم على تذكرة اليوم العشرين نفسها: لم يهلوس، بل أصدر ESCALATE بأمان!", do: s => {
+      s.clear({ dur: 0.4 });
+      s.bubble("in", { text: "<ticket>Broken after 20 days</ticket>", side: "u", x: 350, y: 465, w: 380, font: "mono", size: 20 }, { at: "10%" });
+      s.box("pl", { x: 350, y: 635, w: 380, h: 86, label: "<policy>14-day window</policy>", font: "mono", size: 20, color: "gold" }, { at: "24%" });
+      s.box("llm", { x: 820, y: 545, w: 210, h: 145, label: "LLM", icon: "brain", color: "purple", size: 28 }, { at: "36%" });
+      s.link("a1", "in", "llm", { color: "teal", pulse: true }, { at: "42%" });
+      s.link("a2", "pl", "llm", { color: "gold", pulse: true }, { at: "48%" });
+      s.box("out", { x: 1270, y: 545, w: 320, h: 98, label: "ESCALATE", sub: "routed to human agent ✓", font: "mono", size: 26, color: "green" }, { at: "68%" });
+      s.link("a3", "llm", "out", { color: "green", pulse: true }, { at: "64%" });
+    }},
+    { say: "وقِس الأثر على التقييمات: الانتقال من فقرة غامضة إلى قالب منظّم يرفع الدقة ويخفض الهلوسة.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.bars("sc", [
+        ["Vague prompt", 0.64, "red", "64%  ·  11% hallucinations"],
+        ["+ Clear & Few-shot", 0.85, "blue", "85%  ·  3% hallucinations"],
+        ["+ XML + ESCALATE", 0.96, "green", "96%  ·  0% hallucinations ✓"]
+      ], { x: 560, y: 530, w: 560, gap: 110, size: 26, h: 38 }, { at: "14%" });
+      s.pulse("sc2", { at: "76%", color: "green" });
+    }},
+    { say: "تجنّب حشر التعليمات والنصوص الخام في فقرة واحدة بلا فواصل ولا مخرج طوارئ عند الجهل.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.versus("vs", "الخطأ الشائع ✗", "قاعدة الإنتاج ✓", { colors: ["red", "green"], y: 535, h: 480 }, { at: "8%" });
+      s.col("ms", ["Only 'Don't do X' rules", "Raw text mixed with instructions", "Forces an answer when unsure"], { x: 440, y: 560, w: 470, size: 23, icons: ["x", "alert", "bug"], colors: ["red", "red", "red"] }, { at: "26%", st: 0.16 });
+      s.col("pr", ["Positive step-by-step rules", "XML tags around untrusted data", "Explicit ESCALATE fallback"], { x: 1160, y: 560, w: 470, size: 23, icons: ["check", "code", "shieldok"], colors: ["green", "green", "green"] }, { at: "52%", st: 0.16 });
+    }},
+    { say: "وميزة هذه البنية أنها قابلة للتعديل والتطوير قسمًا بقسم دون كسر بقية الأمر.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.col("pt", ["1 · Role & Goal", "2 · Positive Instructions", "3 · Few-Shot Examples", "4 · <policy> Trusted Facts </policy>", "5 · <ticket> User Input </ticket>", "6 · Fallback: ESCALATE"], { x: 800, y: 535, size: 24, gap: 14, h: 64, w: 580, colors: ["purple", "blue", "green", "gold", "teal", "orange"] }, { at: "10%", st: 0.12 });
+      s.pulse(["pt0", "pt2", "pt5"], { at: "74%", st: 0.12 });
+    }},
+    { sec: "الخلاصة", say: "الأمر الاحترافي قالب هندسي منظّم: تعليمات إيجابية، وأمثلة، ووسوم، وخطة بديلة.", eq: "@T{Prompt} = @B{Clear} + @G{Examples} + @Y{XML Tags} + @O{Fallback}", do: s => {
+      s.callout("gd", { text: "لا تترك النموذج يخمن حين تغيب المعلومة!", x: 800, y: 825, color: "gold", icon: "shieldok" }, { at: "24%" });
+      s.pulse("pt*", { at: "52%", st: 0.08 });
     }}
   ]);
 
   // ------------------------------------------------------------------ 3.3 Context engineering
   X.lesson("3.3", [
-    { sec: "طاولة العمليات", say: "نافذة السياق مثل طاولة عمليات: ضع عليها فقط ما تحتاجه هذه الخطوة.", do: s => {
-      s.zone("tbl", { x: 800, y: 560, w: 640, h: 360, label: "context window", color: "teal" });
-      const items = ["docs", "logs", "tools", "history", "emails", "specs", "tickets", "wiki"];
-      items.forEach((t, i) => s.box("it" + i, { x: i < 4 ? 260 : 1340, y: 360 + (i % 4) * 120, w: 180, h: 70, label: t, size: 24, color: "dim" }, { at: 0.4 + i * 0.06 }));
+    { sec: "طاولة العمليات", say: "تخيّل نافذة السياق كطاولة عمليات جراحية: ضع عليها فقط الأدوات اللازمة لهذه الخطوة.", do: s => {
+      s.zone("tbl", { x: 800, y: 530, w: 660, h: 380, label: "Context Window (Operating Table)", color: "teal" }, { at: "8%" });
+      const items = ["policy", "logs", "order tool", "recent chat", "old emails", "specs", "2023 tickets", "wiki dump"];
+      items.forEach((t, i) => {
+        s.box("it" + i, { x: i < 4 ? 225 : 1375, y: 345 + (i % 4) * 124, w: 210, h: 68, label: t, size: 22, color: "dim" }, { at: (24 + i * 6) + "%" });
+      });
     }},
-    { say: "لكن السياق الأكثر ليس دائمًا أفضل، فالضوضاء تشتّت النموذج.", do: s => {
-      [0, 1, 2, 3, 4, 5, 6, 7].forEach(i => s.to("it" + i, { x: 620 + (i % 4) * 120, y: 470 + Math.floor(i / 4) * 110, w: 110, scale: 0.9 }, { at: 0.2 + i * 0.05, dur: 0.7 }));
-      s.bar("q", { x: 620, y: 800, w: 360, v: 0.8, color: "green", label: "quality", size: 26 }, { at: 0.3 });
-      s.to("q", { v: 0.35, color: "red" }, { at: 1, dur: 1 });
+    { say: "الخطأ الكارثي: رمي مستودع المستشفى كله فوق الطاولة! الضوضاء تُشتّت النموذج فتنهار الجودة.", do: s => {
+      [0, 1, 2, 3, 4, 5, 6, 7].forEach(i => {
+        s.to("it" + i, { x: 575 + (i % 4) * 150, y: 465 + Math.floor(i / 4) * 115, w: 136, stroke: i === 0 || i === 2 || i === 3 ? "soft" : "red" }, { at: (8 + i * 4) + "%", dur: 0.7 });
+      });
+      s.bar("q", { x: 590, y: 805, w: 420, v: 0.86, color: "green", label: "Quality", size: 26, pct: true }, { at: "20%" });
+      s.to("q", { v: 0.36, color: "red" }, { at: "52%", dur: 1.0 });
+      s.badge("ns", { text: "Context Noise!", x: 1165, y: 805, color: "red", size: 22 }, { at: "74%" });
     }},
-    { sec: "الاختيار", say: "فاختر فقط ما تحتاجه الخطوة الحالية.", eq: "@min @; @T{tokens} @quad @T{s.t.} @; @T{task succeeds}", do: s => {
-      [1, 4, 5, 6, 7].forEach((i, k) => s.to("it" + i, { x: i < 4 ? 260 : 1340, y: 360 + (i % 4) * 120, w: 180, scale: 1, opacity: 0.35 }, { at: 0.2 + k * 0.08, dur: 0.7 }));
-      [0, 2, 3].forEach((i, k) => s.to("it" + i, { x: 680 + k * 120, y: 560, stroke: "teal" }, { at: 0.5, dur: 0.7 }));
-      s.to("q", { v: 0.9, color: "green" }, { at: 1.2, dur: 1 });
+    { sec: "الاختيار والانتقاء", say: "هندسة السياق تعني: أزِل الضوضاء، وأبقِ أصغر مجموعة من الـ Tokens عالية القيمة فقط.", eq: "@min @; @T{tokens} @quad @T{s.t.} @; @G{task succeeds}", do: s => {
+      s.out("ns", { at: "0%", dur: 0.3 });
+      [1, 4, 5, 6, 7].forEach((i, k) => {
+        s.to("it" + i, { x: i < 4 ? 225 : 1375, y: 345 + (i % 4) * 124, w: 210, opacity: 0.25, stroke: "dim" }, { at: (10 + k * 7) + "%", dur: 0.7 });
+      });
+      [0, 2, 3].forEach((i, k) => {
+        s.to("it" + i, { x: 620 + k * 180, y: 535, w: 160, stroke: "teal" }, { at: "34%", dur: 0.7 });
+      });
+      s.to("q", { v: 0.93, color: "green" }, { at: "58%", dur: 0.9 });
+      s.badge("ok", { text: "93% High Signal ✓", x: 1175, y: 805, color: "green", size: 22 }, { at: "76%" });
     }},
-    { sec: "الترتيب", say: "والترتيب مهم: التعليمات أولًا، ثم البيانات، ثم السؤال.", do: s => {
+    { sec: "الترتيب والانتباه", say: "حتى مع سياق نظيف، الترتيب مهم: انتباه النماذج يكون أقوى في البداية والنهاية، ويضعف بالوسط.", eq: "@T{attention}: @; @G{start} @; > @; @R{middle} @; < @; @G{end}", do: s => {
       s.clear({ dur: 0.4 });
-      s.col("ord", ["1  instructions", "2  data & documents", "3  the question"], { x: 800, y: 540, size: 30, h: 76, gap: 18, w: 520, colors: ["purple", "gold", "teal"] }, { at: 0.3, st: 0.3 });
+      s.curve("uc", { x: 800, y: 530, w: 780, h: 330, color: "gold", xlabel: "position in context (start → end)", ylabel: "recall", pts: [[0, 0.92], [0.15, 0.78], [0.35, 0.54], [0.5, 0.45], [0.65, 0.54], [0.85, 0.80], [1, 0.95]] }, { at: "10%", dur: 1.5 });
+      s.badge("mid", { text: "Lost in the Middle!", x: 800, y: 590, color: "red", size: 22 }, { at: "68%" });
     }},
-    { sec: "السجل", say: "ولخّص السجل القديم أو احذفه، بدل أن يتضخّم بلا نهاية.", do: s => {
+    { say: "لذلك رتّب السياق بذكاء: التعليمات أولًا، ثم البيانات والمستندات المنتقاة، ثم السؤال في النهاية.", do: s => {
       s.clear({ dur: 0.4 });
-      for (let i = 0; i < 12; i++) s.box("h" + i, { x: 280 + i * 90, y: 520, w: 76, h: 60, r: 8, label: "", color: "blue" }, { at: 0.2 + i * 0.04 });
-      s.box("sum", { x: 420, y: 700, w: 200, h: 64, label: "summary", size: 26, color: "green" }, { at: 1.2 });
-      for (let i = 0; i < 9; i++) s.to("h" + i, { x: 420, y: 700, opacity: 0, scale: 0.4 }, { at: 1.3 + i * 0.04, dur: 0.6 });
+      s.col("ord", ["1 · Instructions & rules (high focus)", "2 · Selected facts & documents", "3 · Current user question (high focus)"], { x: 800, y: 525, size: 27, h: 88, gap: 24, w: 660, icons: ["flag", "docs", "chat"], colors: ["purple", "gold", "teal"] }, { at: "10%", st: 0.24 });
+      s.pulse(["ord0", "ord2"], { at: "74%", color: "green" });
     }},
-    { say: "والهدف: أصغر مجموعة من الـ Tokens عالية القيمة، التي تحقق النتيجة.", eq: "@T{smallest set of high-signal tokens}", do: s => {
-      s.to(["h9", "h10", "h11"], { x: (v, k) => 680 + k * 90, y: 700 }, { dur: 0.7 });
-      s.zone("ctx", { x: 650, y: 700, w: 560, h: 130, label: "lean context", color: "teal" }, { at: 0.5 });
+    { sec: "ضغط السجل", say: "ومع طول المحادثة، لا تترك السجل يتضخّم للأبد؛ لخّص الأدوار القديمة واحتفظ بآخر الأدوار فقط.", eq: "@T{history} @to @G{summary} + @B{last 3 turns}", do: s => {
+      s.clear({ dur: 0.4 });
+      for (let i = 0; i < 12; i++) {
+        s.box("h" + i, { x: 250 + i * 100, y: 455, w: 80, h: 64, r: 8, label: "t" + (i + 1), size: 21, color: i < 9 ? "dim" : "blue" }, { at: (8 + i * 3) + "%" });
+      }
+      s.box("sum", { x: 470, y: 690, w: 260, h: 74, label: "Compact Summary", size: 23, color: "green" }, { at: "46%" });
+      for (let i = 0; i < 9; i++) {
+        s.to("h" + i, { x: 470, y: 690, opacity: 0, scale: 0.35 }, { at: (52 + i * 3) + "%", dur: 0.55 });
+      }
+    }},
+    { say: "فيتحول السجل الضخم إلى سياق رشيق يحفظ كل الحقائق المهمة بنصف التكلفة.", do: s => {
+      s.to(["h9", "h10", "h11"], { x: (v, k) => 755 + k * 108, y: 690, stroke: "teal" }, { at: "10%", dur: 0.7 });
+      s.zone("ctx", { x: 700, y: 690, w: 770, h: 155, label: "Lean High-Signal Context", color: "teal" }, { at: "42%" });
+      s.badge("sv", { text: "−75% tokens · higher focus ✓", x: 1265, y: 690, color: "green", size: 22 }, { at: "70%" });
+    }},
+    { sec: "الأرقام والكود", say: "قارن بالأرقام: حشو 18 ألف Token يعطي 68% دقة وبطءًا، بينما 2400 Token منتقاة تعطي 93%!", do: s => {
+      s.clear({ dur: 0.4 });
+      s.bars("cmp", [
+        ["18K dumped tokens", 0.68, "red", "68% acc · 3.8 s · $0.054"],
+        ["2.4K curated tokens", 0.93, "green", "93% acc · 1.1 s · $0.007 ✓"]
+      ], { x: 540, y: 525, w: 540, gap: 125, size: 27, h: 40 }, { at: "14%" });
+      s.pulse("cmp1", { at: "74%", color: "green" });
+    }},
+    { say: "وفي الكود نبني دالة تجميع سياق صريحة: تنتقي أفضل المقاطع، وتضغط القديم، وترتّب الأجزاء.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.code("bc", { x: 800, y: 515, size: 23, title: "build_context.py", lines: [
+        "def build_context(ticket, history):",
+        "    docs   = retriever.top_k(ticket, k=3)       # select",
+        "    recent = summarize_old(history, keep=3)     # compact",
+        "    return [SYSTEM, format_docs(docs), recent, ticket]"
+      ] }, { at: "8%", dur: 1.5 });
+      [1, 2, 3].forEach((h, i) => s.to("bc", { hl: h }, { at: (46 + i * 16) + "%", dur: 0.2 }));
+    }},
+    { say: "أكبر خرافة شائعة: «النافذة تتسع 200 ألف، فلنرمِ كل شيء!» السعة الكبيرة لا تعني انتباهًا مجانيًا.", do: s => {
+      s.to("bc", { y: 340, scale: 0.72, hl: -1 }, { at: "0%", dur: 0.55 });
+      s.box("ms", { x: 460, y: 690, w: 510, h: 145, label: "الخطأ: حشو النافذة لأنها كبيرة", sub: "200K dump → distraction & cost", icon: "alert", color: "red", size: 22 }, { at: "24%" });
+      s.box("pr", { x: 1140, y: 690, w: 510, h: 145, label: "الإنتاج: انتقاء + ترتيب + ضغط مستمر", sub: "smallest high-signal token set", icon: "shieldok", color: "green", size: 22 }, { at: "54%" });
+      s.link("mp", "ms", "pr", { color: "green", pulse: true }, { at: "74%" });
+    }},
+    { say: "كل Token يدخل السياق يجب أن يدفع ثمنه بإضافة قيمة مباشرة للخطوة الحالية.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.box("f", { x: 800, y: 500, w: 720, h: 155, label: "Filter: Does THIS step need this token?", sub: "YES → keep in order   |   NO → drop or summarize", icon: "filter", color: "teal", size: 26 }, { at: "12%" });
+      s.badge("b1", { text: "Higher accuracy", x: 470, y: 710, color: "green", size: 22 }, { at: "46%" });
+      s.badge("b2", { text: "Lower latency", x: 800, y: 710, color: "blue", size: 22 }, { at: "60%" });
+      s.badge("b3", { text: "Lower cost", x: 1130, y: 710, color: "gold", size: 22 }, { at: "74%" });
+    }},
+    { sec: "الخلاصة", say: "خلاصة هندسة السياق: انتقِ بدقة، ورتّب بذكاء، واضغط السجل القديم باستمرار.", eq: "@T{Context Engineering} = @C{Select} + @Y{Order} + @G{Compact}", do: s => {
+      s.clear({ dur: 0.4 });
+      s.chain("sum", ["Select High-Signal", "Order Strategically", "Compact History"], { y: 525, gap: 80, w: 325, h: 155, size: 25, icons: ["filter", "layers", "bolt"], colors: ["teal", "gold", "green"], pulse: true }, { at: "10%", st: 0.2 });
     }}
   ]);
 
   // ------------------------------------------------------------------ 3.4 Prompts as versioned assets
   X.lesson("3.4", [
-    { sec: "الأمر كود", say: "الأمر ليس نصًا عابرًا، بل كود له إصدارات وسجل تغييرات.", do: s => {
-      s.chain("v", ["v2.2", "v2.3", "v2.4"], { y: 520, gap: 120, colors: ["dim", "dim", "green"], icons: ["doc", "doc", "doc"], w: 180, h: 150, size: 28 }, { st: 0.3 });
-      s.icon("git", { name: "branch", x: 800, y: 700, s: 64, color: "orange" }, { at: 1 });
+    { sec: "حادثة الثلاثاء", say: "صباح الثلاثاء تهبط جودة ردود الدعم فجأة من 88% إلى 71%، ولا أحد يعلم ماذا تغيّر!", do: s => {
+      s.curve("drop", { x: 640, y: 530, w: 680, h: 330, color: "red", xlabel: "days (Sun → Wed)", ylabel: "accuracy", pts: [[0, 0.88], [0.35, 0.89], [0.65, 0.87], [0.75, 0.71], [1, 0.70]] }, { at: "8%", dur: 1.4 });
+      s.badge("al", { text: "−17% drop on Tue!", x: 1210, y: 430, color: "red", size: 24 }, { at: "52%" });
+      s.box("unk", { x: 1210, y: 590, w: 410, h: 120, label: "Which prompt caused this?", sub: "inline strings · zero version logs", icon: "question", color: "orange", size: 22 }, { at: "70%" });
     }},
-    { sec: "القوالب", say: "والقالب يفصل التعليمات الثابتة عن المتغيرات.", eq: "@T{template}(@Y{policy}, @; @C{ticket}) @to @T{prompt}", do: s => {
-      s.clear({ dur: 0.4 });
-      s.box("tp", { x: 800, y: 460, w: 760, h: 110, label: "Reply using {{policy}} to {{ticket}}", font: "mono", size: 28, color: "blue" }, { at: 0.3 });
-      s.box("p1", { x: 480, y: 680, w: 220, h: 60, label: "refund_policy", font: "mono", size: 22, color: "gold" }, { at: 0.8 }); s.box("p2", { x: 1120, y: 680, w: 220, h: 60, label: "customer msg", font: "mono", size: 22, color: "teal" }, { at: 1 });
-      s.flow("p1", "tp", { color: "gold", at: 1.3 }); s.flow("p2", "tp", { color: "teal", at: 1.4 });
+    { say: "لأن الفريق عامل الأوامر كنصوص عابرة داخل الكود، بلا أرقام إصدارات ولا سجل تغييرات!", do: s => {
+      s.focus("unk", { zoom: 1.12, at: "0%", dur: 0.6 });
+      s.callout("nt", { text: "تعديل نص واحد قد يغيّر سلوك التطبيق كاملًا كأي كود!", x: 800, y: 790, color: "gold", icon: "alert" }, { at: "45%" });
+      s.unfocus({ at: "80%", dur: 0.55 });
     }},
-    { sec: "التسجيل", say: "وسجّل رقم إصدار الأمر مع كل طلب.", do: s => {
+    { sec: "إصدارات وقوالب", say: "القاعدة الأولى: الأمر كود برمجي؛ احفظه في Git أو Prompt Registry برقم إصدار واضح.", eq: "@T{prompt} @in @{ v_{2.2}, @; v_{2.3}, @; @G{v_{2.4}} @}", do: s => {
       s.clear({ dur: 0.4 });
-      s.code("lg", { x: 800, y: 520, size: 24, title: "requests.log", lines: ["{\"prompt_v\": \"support-reply-v2.4\", \"latency_ms\": 812}", "{\"prompt_v\": \"support-reply-v2.4\", \"latency_ms\": 640}", "{\"prompt_v\": \"support-reply-v2.4\", \"latency_ms\": 905}"] }, { at: 0.3, dur: 1.6 });
+      s.chain("v", ["support-v2.2", "support-v2.3", "support-v2.4"], { y: 475, gap: 105, colors: ["dim", "blue", "green"], icons: ["doc", "doc", "doc"], w: 250, h: 150, size: 24, pulse: true }, { at: "10%", st: 0.22 });
+      s.box("git", { x: 800, y: 705, w: 460, h: 74, label: "Git / Prompt Registry + Diff", icon: "branch", inline: true, color: "orange", size: 24 }, { at: "62%" });
     }},
-    { sec: "المقارنة", say: "وقبل الإطلاق، قارن الإصدارين على مجموعة التقييم نفسها.", eq: "@T{score}(v_{2.5}) @; @T{vs} @; @T{score}(v_{2.4})", do: s => {
+    { say: "القاعدة الثانية: القوالب تفصل التعليمات الثابتة عن المتغيرات الديناميكية مثل السياسة والتذكرة.", eq: "@T{template}(@Y{policy}, @; @C{ticket}) @to @T{prompt}", do: s => {
       s.clear({ dur: 0.4 });
-      s.bars("cmp", [["v2.4", 0.86, "teal", "86%"], ["v2.5", 0.79, "red", "79%"]], { x: 640, y: 520, w: 560, gap: 100, size: 30, h: 36 }, { at: 0.3 });
-      s.note("same", { text: "same 120 eval cases", x: 920, y: 680, font: "math", color: "gold" }, { at: 0.8 });
+      s.box("tp", { x: 800, y: 425, w: 820, h: 112, label: "Reply politely using {{policy}} to {{ticket}}", font: "mono", size: 25, color: "blue" }, { at: "10%" });
+      s.box("p1", { x: 470, y: 685, w: 280, h: 74, label: "refund_policy", font: "mono", size: 23, color: "gold" }, { at: "34%" });
+      s.box("p2", { x: 1130, y: 685, w: 280, h: 74, label: "customer_msg", font: "mono", size: 23, color: "teal" }, { at: "48%" });
+      s.link("l1", "p1", "tp", { color: "gold", pulse: true }, { at: "44%" });
+      s.link("l2", "p2", "tp", { color: "teal", pulse: true }, { at: "58%" });
+      s.stream("p1", "tp", { at: "66%", span: 1.5, every: 0.45, color: "gold" });
+      s.stream("p2", "tp", { at: "70%", span: 1.5, every: 0.45, color: "teal" });
     }},
-    { sec: "التراجع", say: "واحتفظ بطريقة سريعة للتراجع عن أي إصدار سيئ.", do: s => {
+    { sec: "التسجيل والمقارنة", say: "القاعدة الثالثة: سجّل رقم إصدار الأمر مع كل طلب في السجلات لتربط كل رد بإصداره.", do: s => {
       s.clear({ dur: 0.4 });
-      s.box("reg", { x: 800, y: 380, w: 300, h: 90, label: "prompt registry", icon: "db", inline: true, size: 26, color: "blue" }, { at: 0.2 });
-      s.box("bad", { x: 1100, y: 600, label: "v2.5 live", size: 26, color: "red", h: 64 }, { at: 0.4 });
-      s.box("good", { x: 500, y: 600, label: "v2.4", size: 26, color: "green", h: 64 }, { at: 0.6 });
-      s.link("rb", "bad", "good", { color: "green", bend: 0.25, label: "rollback in 1 click", lc: "green" }, { at: 1 });
+      s.code("lg", { x: 800, y: 515, size: 22, title: "requests.log", lines: [
+        "{\"req\": \"r_901\", \"prompt_v\": \"support-reply-v2.4\", \"ms\": 812}",
+        "{\"req\": \"r_902\", \"prompt_v\": \"support-reply-v2.4\", \"ms\": 640}",
+        "{\"req\": \"r_903\", \"prompt_v\": \"support-reply-v2.5\", \"ms\": 910}"
+      ] }, { at: "10%", dur: 1.4 });
+      s.to("lg", { hl: 0 }, { at: "48%", dur: 0.2 });
+      s.to("lg", { hl: 2 }, { at: "72%", dur: 0.2 });
     }},
-    { sec: "الخلاصة", say: "إذن: إصدارات، وقوالب، وتسجيل، ومقارنة، وتراجع سريع. الأمر يُدار ككود تمامًا.", do: s => {
+    { say: "القاعدة الرابعة: قبل إطلاق أي نسخة جديدة، قارنها بالإصدار الحالي على مجموعة التقييم نفسها.", eq: "@T{score}(v_{2.5}) @; @T{vs} @; @T{score}(v_{2.4}) @; (@T{same 120 cases})", do: s => {
       s.clear({ dur: 0.4 });
-      s.chain("sum", ["versions", "templates", "logging", "A/B on evals", "rollback"], { y: 520, gap: 40, colors: ["blue", "teal", "gold", "green", "orange"], h: 90, size: 24 }, { at: 0.3, st: 0.18 });
+      s.bars("cmp", [
+        ["support-v2.4 (prod)", 0.86, "teal", "86%  ✓"],
+        ["support-v2.5 (candidate)", 0.79, "red", "79%  (−7% blocked ✗)"]
+      ], { x: 580, y: 495, w: 540, gap: 115, size: 27, h: 40 }, { at: "14%" });
+      s.callout("sm", { text: "نفس الـ 120 حالة اختبار جنبًا إلى جنب", x: 800, y: 710, color: "gold", icon: "scale" }, { at: "64%" });
+    }},
+    { sec: "الكود والتراجع", say: "وهكذا تبدو إدارة الإصدارات في الكود: نجلب القالب من السجل، نملأ المتغيرات، ونسجّل الرقم.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.code("py", { x: 800, y: 515, size: 22, title: "reply_service.py", lines: [
+        "PROMPT_VERSION = \"support-reply-v2.4\"",
+        "template = registry.get(PROMPT_VERSION)",
+        "prompt   = template.render(policy=pol, ticket=msg)",
+        "reply    = llm(prompt)",
+        "logger.info({\"prompt_v\": PROMPT_VERSION, \"ms\": ms})"
+      ] }, { at: "8%", dur: 1.6 });
+      [0, 1, 2, 4].forEach((h, i) => s.to("py", { hl: h }, { at: (44 + i * 13) + "%", dur: 0.2 }));
+    }},
+    { say: "وإذا تسرّب إصدار سيئ إلى الإنتاج، يمنحك السجل تراجعًا فوريًا Rollback بضغطة زر دون إعادة نشر.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.box("reg", { x: 800, y: 345, w: 360, h: 88, label: "Prompt Registry", icon: "db", inline: true, size: 26, color: "blue" }, { at: "8%" });
+      s.box("bad", { x: 1160, y: 605, w: 260, h: 90, label: "v2.5 (live)", sub: "79% ✗", size: 24, color: "red" }, { at: "26%" });
+      s.box("good", { x: 440, y: 605, w: 260, h: 90, label: "v2.4 (stable)", sub: "86% ✓", size: 24, color: "green" }, { at: "40%" });
+      s.link("l1", "reg", "bad", { color: "red" }, { at: "32%" });
+      s.link("rb", "bad", "good", { color: "green", bend: 0.24, label: "1-click rollback", lc: "green", pulse: true }, { at: "58%" });
+      s.flow("bad", "good", { color: "green", bend: 0.24, at: "68%" });
+      s.pulse("good", { at: "80%", color: "green" });
+    }},
+    { say: "وبدمج ذلك في CI، يصبح للأوامر مسار إطلاق هندسي كامل: مراجعة، ثم تقييم، ثم إطلاق تدريجي.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.chain("ci", ["PR Diff", "Eval Suite", "Registry", "Canary 10%", "Prod 100%"], { y: 525, gap: 40, w: 225, h: 140, size: 22, icons: ["pr", "flask", "db", "gauge", "rocket"], colors: ["blue", "gold", "teal", "orange", "green"], pulse: true }, { at: "10%", st: 0.16 });
+      s.stream("ci0", "ci4", { at: "66%", span: 1.6, every: 0.5, color: "green" });
+    }},
+    { say: "تجنّب تعديل نصوص الأوامر عشوائيًا داخل الإنتاج دون رقم إصدار أو خط رجعة جاهز.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.versus("vs", "الخطأ الشائع ✗", "قاعدة الإنتاج ✓", { colors: ["red", "green"], y: 535, h: 480 }, { at: "8%" });
+      s.col("ms", ["Hardcoded unversioned strings", "Editing prod without eval diff", "No instant rollback path"], { x: 440, y: 560, w: 470, size: 23, icons: ["x", "alert", "bug"], colors: ["red", "red", "red"] }, { at: "26%", st: 0.16 });
+      s.col("pr", ["Versioned templates in Registry", "A/B compare on same eval set", "Log prompt_v + 1-click rollback"], { x: 1160, y: 560, w: 470, size: 23, icons: ["branch", "scale", "refresh"], colors: ["green", "green", "green"] }, { at: "52%", st: 0.16 });
+    }},
+    { say: "بهذا الانضباط، يتحول تعديل الأوامر من مخاطرة غامضة إلى هندسة برمجية موثوقة.", do: s => {
+      s.focus("vsR", { zoom: 1.08, at: "10%", dur: 0.6 });
+      s.callout("ok", { text: "الأمر أصل برمجي يُدار كالكود تمامًا ✓", x: 1160, y: 810, color: "green", icon: "shieldok" }, { at: "45%" });
+      s.unfocus({ at: "80%", dur: 0.55 });
+    }},
+    { sec: "الخلاصة", say: "خمس ركائز لإدارة الأوامر: إصدارات، وقوالب، وتسجيل، ومقارنة بالتقييم، وتراجع سريع.", eq: "@T{Prompt Ops} = @B{Versions} + @C{Templates} + @Y{Logs} + @G{Evals} + @O{Rollback}", do: s => {
+      s.clear({ dur: 0.4 });
+      s.chain("sum", ["Versions", "Templates", "Logging", "Eval A/B", "Rollback"], { y: 525, gap: 40, w: 225, h: 145, size: 23, icons: ["branch", "code", "list", "scale", "refresh"], colors: ["blue", "teal", "gold", "green", "orange"], pulse: true }, { at: "10%", st: 0.16 });
     }}
   ]);
 
   // ------------------------------------------------------------------ 4.1 LangChain fundamentals
   X.lesson("4.1", [
-    { sec: "مشكلة المزوّدين", say: "كل مزوّد نماذج له SDK مختلف، وشكل رسائل مختلف.", do: s => {
-      ["Provider A", "Provider B", "Provider C"].forEach((t, i) => s.box("pv" + i, { x: 440 + i * 360, y: 640, w: 260, h: 110, label: t, sub: ["messages[]", "contents[]", "prompt str"][i], color: ["purple", "blue", "orange"][i], size: 28 }, { at: 0.2 + i * 0.2 }));
+    { sec: "مشكلة المزوّدين", say: "تبني تطبيقك على مزوّد واحد، ثم يطلب الفريق تجربة مزوّد أرخص للتصنيف وثالث للتلخيص.", do: s => {
+      s.box("app", { x: 800, y: 345, w: 280, h: 96, label: "Your App", icon: "code", inline: true, color: "teal", size: 27 }, { at: "0%" });
+      ["Provider A", "Provider B", "Provider C"].forEach((t, i) => {
+        s.box("pv" + i, { x: 400 + i * 400, y: 655, w: 290, h: 120, label: t, sub: ["messages[]", "contents[]", "input[]"][i], color: ["purple", "blue", "orange"][i], size: 26 }, { at: (24 + i * 16) + "%" });
+        s.link("lp" + i, "app", "pv" + i, { color: "red", dash: "6 6" }, { at: (30 + i * 16) + "%" });
+      });
     }},
-    { say: "وLangChain يقدّم فوقها واجهة موحّدة للنماذج والرسائل والأدوات.", do: s => {
-      s.box("lc", { x: 800, y: 420, w: 1000, h: 110, label: "one interface: chat models · messages · tools", icon: "layers", inline: true, color: "teal", size: 28 }, { at: 0.3, in: "draw" });
-      [0, 1, 2].forEach(i => s.link("l" + i, "lc", "pv" + i, { color: "dim" }, { at: 0.8 + i * 0.1 }));
+    { say: "كل مزوّد له SDK مختلف وأسماء حقول مختلفة؛ فتضطر لإعادة كتابة كود الاستدعاء في كل مكان!", do: s => {
+      s.badge("e1", { text: "3× SDKs", x: 400, y: 770, color: "red", size: 21 }, { at: "18%" });
+      s.badge("e2", { text: "3× message formats", x: 800, y: 770, color: "orange", size: 21 }, { at: "42%" });
+      s.badge("e3", { text: "3× tool schemas", x: 1200, y: 770, color: "red", size: 21 }, { at: "66%" });
     }},
-    { say: "فيصبح تغيير المزوّد تعديلًا في الإعدادات.", eq: "@T{model} = @T{init@_chat@_model}(@O{provider})", do: s => {
-      s.dot("sel", { x: 440, y: 560, r: 12, color: "gold", halo: true }, { at: 0.2 });
-      s.to("sel", { x: 800 }, { at: 0.6, dur: 0.7 }); s.to("sel", { x: 1160 }, { at: 1.5, dur: 0.7 });
+    { sec: "الواجهة الموحّدة", say: "هنا يقدّم LangChain محوّل طاقة موحّدًا فوق المزوّدين: نفس النماذج والرسائل والأدوات.", eq: "@T{App} @to @C{LangChain Interface} @to @{ @P{A}, @; @B{B}, @; @O{C} @}", do: s => {
+      s.out(["lp0", "lp1", "lp2", "e1", "e2", "e3"], { at: "0%", dur: 0.35 });
+      s.to("app", { y: 275, scale: 0.85 }, { at: "8%", dur: 0.5 });
+      s.box("lc", { x: 800, y: 455, w: 1060, h: 102, label: "LangChain: unified chat models · messages · tools", icon: "layers", inline: true, color: "teal", size: 25 }, { at: "20%", in: "draw" });
+      s.link("al", "app", "lc", { color: "teal", pulse: true }, { at: "42%" });
+      [0, 1, 2].forEach(i => s.link("l" + i, "lc", "pv" + i, { color: "soft", pulse: true }, { at: (50 + i * 10) + "%" }));
     }},
-    { sec: "ثمن التجريد", say: "لكن للتجريد ثمن: تتبّع الأخطاء أصعب، ودعم الميزات الجديدة قد يتأخر.", do: s => {
+    { say: "فيصبح تبديل المزوّد مجرد سطر إعدادات واحد، دون لمس منطق التطبيق أو القوالب.", eq: "@T{model} = @T{init@_chat@_model}(@O{provider})", do: s => {
+      s.dot("sel", { x: 400, y: 565, r: 14, color: "gold", halo: true }, { at: "12%" });
+      s.to("sel", { x: 800 }, { at: "34%", dur: 0.8 });
+      s.to("sel", { x: 1200 }, { at: "62%", dur: 0.8 });
+      s.pulse(["pv0", "pv1", "pv2"], { at: "24%", st: 0.45 });
+    }},
+    { say: "وحتى أنواع الرسائل تتوحّد عبر الجميع: SystemMessage وHumanMessage وAIMessage وToolMessage.", do: s => {
       s.clear({ dur: 0.4 });
-      s.col("ly", ["your code", "LangChain", "provider SDK", "model API"], { x: 800, y: 520, size: 28, h: 70, gap: 12, w: 460, colors: ["teal", "blue", "purple", "dim"] }, { at: 0.3, st: 0.15 });
-      s.icon("bug", { name: "bug", x: 1140, y: 560, s: 60, color: "red" }, { at: 1.2 });
+      s.grid("mg", ["SystemMessage\ninstructions", "HumanMessage\nuser input", "AIMessage\nmodel reply", "ToolMessage\ntool result"], { cols: 4, y: 525, cw: 300, ch: 180, size: 23, colors: ["purple", "blue", "green", "orange"] }, { at: "10%", st: 0.16 });
+      s.callout("un", { text: "نفس الكود يعمل على Anthropic وOpenAI وGemini ✓", x: 800, y: 725, color: "teal" }, { at: "70%" });
     }},
-    { sec: "متى؟", say: "استخدمه حين تحتاج منظومته، واستخدم الـ SDK المباشر حين لا تحتاجها.", do: s => {
+    { sec: "ثمن التجريد", say: "لكن لكل طبقة تجريد ثمن حقيقي: تتبع الأخطاء يصبح أعمق، والميزات الجديدة تتأخر في الدعم.", eq: "@T{abstraction} = @G{portability} - @R{visibility}", do: s => {
       s.clear({ dur: 0.4 });
-      s.versus("vs", "LangChain", "direct SDK", { colors: ["teal", "blue"] }, { at: 0.2 });
-      s.col("a", ["many providers", "LangGraph, integrations", "shared tooling"], { x: 435, y: 560, size: 26, w: 420, colors: ["teal", "teal", "teal"] }, { at: 0.5, st: 0.15 });
-      s.col("b", ["one provider", "newest features first", "simple stack"], { x: 1165, y: 560, size: 26, w: 420, colors: ["blue", "blue", "blue"] }, { at: 0.8, st: 0.15 });
+      s.col("ly", ["1 · Your Application Code", "2 · LangChain Abstraction Layer", "3 · Provider Official SDK", "4 · Raw Model HTTP API"], { x: 640, y: 525, size: 25, h: 76, gap: 18, w: 540, colors: ["teal", "blue", "purple", "dim"] }, { at: "10%", st: 0.15 });
+      s.box("bg", { x: 1210, y: 470, w: 380, h: 108, label: "Harder stack traces", sub: "extra wrapper layers", icon: "bug", inline: true, color: "red", size: 22 }, { at: "52%" });
+      s.box("lg", { x: 1210, y: 615, w: 380, h: 108, label: "Lagging new features", sub: "SDK ships weeks earlier", icon: "clock", inline: true, color: "orange", size: 22 }, { at: "68%" });
+      s.link("lb1", "ly1", "bg", { color: "red" }, { at: "50%" });
+      s.link("lb2", "ly1", "lg", { color: "orange" }, { at: "66%" });
     }},
-    { sec: "مثال", say: "ومثال على ذلك: تبديل المزوّد يصبح تغيير نص واحد في الإعدادات.", do: s => {
+    { sec: "في الكود", say: "انظر بساطة تبديل النموذج في الكود: تغيير نص واحد يبدّل المزوّد خلف الواجهة نفسها.", do: s => {
       s.clear({ dur: 0.4 });
-      s.code("cd", { x: 800, y: 520, size: 26, title: "model.py", lines: ["from langchain.chat_models import init_chat_model", "llm = init_chat_model(\"anthropic:claude-sonnet-4-5\")", "# llm = init_chat_model(\"openai:gpt-4.1\")"] }, { at: 0.3, dur: 1.6 });
-      s.to("cd", { hl: 1 }, { at: 2.1, dur: 0.2 });
+      s.code("cd", { x: 800, y: 515, size: 23, title: "switch_model.py", lines: [
+        "from langchain.chat_models import init_chat_model",
+        "",
+        "llm = init_chat_model(\"anthropic:claude-sonnet-4-5\")",
+        "# Swap provider in one config line:",
+        "# llm = init_chat_model(\"openai:gpt-4.1\")",
+        "resp = llm.invoke(messages)"
+      ] }, { at: "8%", dur: 1.5 });
+      s.to("cd", { hl: 2 }, { at: "46%", dur: 0.2 });
+      s.to("cd", { hl: 4 }, { at: "66%", dur: 0.2 });
+      s.to("cd", { hl: 5 }, { at: "80%", dur: 0.2 });
+    }},
+    { sec: "متى تستخدمه؟", say: "لذا القرار عملي لا عقائدي: استخدم LangChain حين تحتاج منظومته وتعدد المزوّدين.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.versus("vs", "Use LangChain", "Use Direct SDK", { colors: ["teal", "blue"], y: 540, h: 510 }, { at: "8%" });
+      s.col("a", ["Multiple model providers", "Using LangGraph & ecosystem", "Shared tools & retrievers"], { x: 440, y: 565, size: 24, w: 460, icons: ["layers", "graph", "plug"], colors: ["teal", "teal", "teal"] }, { at: "26%", st: 0.18 });
+      s.focus("vsL", { zoom: 1.08, at: "58%", dur: 0.55 });
+    }},
+    { say: "واستخدم الـ SDK المباشر حين تعتمد مزوّدًا واحدًا وتريد أبسط كود وأسرع وصول لميزاته الجديدة.", do: s => {
+      s.unfocus({ at: "0%", dur: 0.45 });
+      s.col("b", ["Single provider focus", "Day-1 access to new API features", "Lean stack & direct debugging"], { x: 1160, y: 565, size: 24, w: 460, icons: ["bolt", "sparkle", "code"], colors: ["blue", "blue", "blue"] }, { at: "18%", st: 0.18 });
+      s.focus("vsR", { zoom: 1.08, at: "58%", dur: 0.55 });
+      s.unfocus({ at: "82%", dur: 0.5 });
+    }},
+    { say: "قارن الجهد: الـ SDK المباشر أخف لمكالمة واحدة، بينما يلمع التجريد حين يكبر التطبيق وتكثر التكاملات.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.bars("tr", [
+        ["1 simple call → Direct SDK", 0.22, "blue", "minimal overhead ✓"],
+        ["1 simple call → Heavy framework", 0.72, "orange", "unneeded layers ✗"],
+        ["Multi-provider + Graph → LangChain", 0.35, "teal", "saves weeks ✓"]
+      ], { x: 600, y: 525, w: 500, gap: 112, size: 25, h: 36 }, { at: "14%" });
+    }},
+    { say: "تجنّب إخفاء استدعاء واحد خلف 5 طبقات لا تفهمها؛ افهم دائمًا الـ HTTP payload الفعلي تحت الغطاء.", do: s => {
+      s.clear({ dur: 0.4 });
+      s.box("ms", { x: 460, y: 525, w: 500, h: 165, label: "الخطأ: تجريد أعمى بلا فهم للتحت", sub: "cannot inspect raw prompt or error", icon: "alert", color: "red", size: 22 }, { at: "14%" });
+      s.box("pr", { x: 1140, y: 525, w: 500, h: 165, label: "الإنتاج: استخدمه بوعي وراقب الـ Traces", sub: "inspect exact prompts & tool payloads", icon: "eye", color: "green", size: 22 }, { at: "48%" });
+      s.link("mp", "ms", "pr", { color: "green", pulse: true }, { at: "70%" });
+    }},
+    { sec: "الخلاصة", say: "LangChain محوّل طاقة موحّد: رائع لتعدد المزوّدين ومنظومة LangGraph، وبسيط الاستغناء عنه لمكالمة منفردة.", eq: "@T{LangChain} @; @Leftrightarrow @; @C{Ecosystem Needed} @quad @mid @quad @B{Direct SDK} @; @Leftrightarrow @; @T{Stay Lean}", do: s => {
+      s.clear({ dur: 0.4 });
+      s.chain("sum", ["Your App", "Right Layer\n(LangChain or SDK)", "Inspect Traces", "Model API"], { y: 525, gap: 56, w: 265, h: 150, size: 23, icons: ["code", "layers", "eye", "cloud"], colors: ["teal", "gold", "green", "purple"], pulse: true }, { at: "10%", st: 0.18 });
     }}
   ]);
 
-  // ------------------------------------------------------------------ 4.2 LangChain composition
-  X.lesson("4.2", [
-    { sec: "السلسلة", say: "في LangChain نركّب الخطوات في سلسلة: أمر، ثم نموذج، ثم محلّل.", eq: "@T{chain} = @T{prompt} @mid @T{llm} @mid @T{parser}", do: s => {
-      s.chain("c", ["prompt", "llm", "parser"], { y: 520, gap: 120, colors: ["blue", "purple", "teal"], icons: ["doc", "brain", "filter"], w: 200, h: 150, size: 28 }, { st: 0.3 });
-      s.flow("c0", "c1", { color: "blue", at: 1.2 }); s.flow("c1", "c2", { color: "purple", at: 1.8 });
-    }},
-    { sec: "مخرجات مهيكلة", say: "وwith_structured_output يعيد كائنًا متحقَّقًا منه مباشرة.", do: s => {
-      s.clear({ dur: 0.4 });
-      s.code("cd", { x: 620, y: 520, size: 24, title: "chain.py", lines: ["class Ticket(BaseModel):", "    category: Literal[\"refund\", \"shipping\", \"other\"]", "    urgent: bool", "", "chain = prompt | llm.with_structured_output(Ticket)"] }, { at: 0.3, dur: 1.8 });
-      s.box("obj", { x: 1300, y: 520, w: 280, h: 120, label: "Ticket(…)", sub: "typed & validated", font: "mono", size: 26, color: "green" }, { at: 2.2 });
-      s.to("cd", { hl: 4 }, { at: 2.1, dur: 0.2 });
-    }},
-    { sec: "الأدوات", say: "وbind_tools يربط مخططات الأدوات بالنموذج.", do: s => {
-      s.clear({ dur: 0.4 });
-      s.box("llm", { x: 640, y: 520, w: 240, h: 150, label: "llm", icon: "brain", color: "purple", size: 28 }, { at: 0.3 });
-      ["get_order", "search_docs", "refund"].forEach((t, i) => { s.box("t" + i, { x: 1120, y: 380 + i * 140, w: 260, h: 70, label: t, font: "mono", size: 24, color: "orange" }, { at: 0.5 + i * 0.15 }); s.link("tl" + i, "llm", "t" + i, { color: "orange", head: false, dash: "6 6" }, { at: 0.6 + i * 0.15 }); });
-      s.note("bt", { text: "llm.bind_tools([...])", x: 640, y: 680, font: "mono", size: 24, color: "orange" }, { at: 1 });
-    }},
-    { sec: "التتبع", say: "والتتبع يعرض مدخلات كل خطوة ومخرجاتها وزمنها والـ Tokens.", do: s => {
-      s.clear({ dur: 0.4 });
-      [["prompt", 0.02, "blue", "2 ms"], ["llm", 0.82, "purple", "820 ms · 512 tokens"], ["parser", 0.01, "teal", "1 ms"]].forEach(([l, v, c, t], i) => s.bar("tr" + i, { x: 520, y: 430 + i * 90, w: 760, v: Math.max(0.02, v), color: c, label: l, val: t, size: 28, h: 34 }, { at: 0.3 + i * 0.2 }));
-      s.note("tt", { text: "trace", x: 900, y: 340, font: "math", color: "gold", size: 30 }, { at: 0.2 });
-    }},
-    { sec: "الخلاصة", say: "إذن: سلسلة قابلة لإعادة الاستخدام، ومخرجات متحقَّق منها، وأدوات مربوطة، وتتبّع لكل خطوة.", do: s => {
-      s.clear({ dur: 0.4 });
-      s.grid("sum", ["prompt | llm | parser", "with_structured_output", "bind_tools", "tracing"], { cols: 4, y: 520, cw: 300, ch: 130, size: 22, font: "mono", colors: ["blue", "green", "orange", "gold"] }, { at: 0.3, st: 0.15 });
-    }}
-  ]);
-
-  // ------------------------------------------------------------------ A2.1 Context as a finite attention budget
-  X.lesson("A2.1", [
-    { sec: "ميزانية الانتباه", say: "السياق مورد محدود، وانتباه النموذج ميزانية تتوزّع على كل Token.", eq: "@sum_i a_i = 1", do: s => {
-      for (let i = 0; i < 6; i++) { s.box("t" + i, { x: 450 + i * 140, y: 640, w: 110, h: 56, label: "tok", size: 22, color: "soft" }, { at: 0.2 + i * 0.05 }); s.box("a" + i, { x: 450 + i * 140, y: 600 - 90, w: 60, h: 180, r: 6, label: "", color: "gold", fill: "#3a2f12" }, { at: 0.5 + i * 0.05, in: "grow" }); }
-    }},
-    { say: "وكلما زادت الـ Tokens، قلّ نصيب كل واحد منها.", do: s => {
-      s.out(["t*", "a*"], { dur: 0.4 });
-      for (let i = 0; i < 18; i++) { s.box("u" + i, { x: 290 + i * 60, y: 640, w: 48, h: 40, r: 6, label: "", color: "soft" }, { at: 0.3 + i * 0.02 }); s.box("b" + i, { x: 290 + i * 60, y: 600, w: 30, h: 60, r: 4, label: "", color: "gold", fill: "#3a2f12" }, { at: 0.6 + i * 0.02, in: "grow" }); }
-    }},
-    { say: "فكل Token إضافي ينافس على الانتباه، والعائد يتناقص.", do: s => {
-      s.clear({ dur: 0.4 });
-      s.line("ax", { x1: 400, y1: 760, x2: 1240, y2: 760, color: "soft" }, { at: 0.2 }); s.line("ay", { x1: 400, y1: 760, x2: 400, y2: 330, color: "soft" }, { at: 0.2 });
-      s.note("xl", { text: "tokens in context", x: 820, y: 805, font: "math" }, { at: 0.3 }); s.note("yl", { text: "useful attention", x: 400, y: 300, font: "math" }, { at: 0.3 });
-      s.path("cv", { d: "M400 740 C 520 420, 640 380, 820 370 S 1100 380, 1240 400", color: "gold", w: 5 }, { at: 0.5, dur: 1.5 });
-    }},
-    { sec: "في التطبيق", say: "اكتب التعليمات بالمستوى المناسب: لا غامضة جدًا، ولا مفصّلة بإفراط.", do: s => {
-      s.clear({ dur: 0.4 });
-      s.bar("sl", { x: 400, y: 540, w: 800, v: 1, color: "grid", label: "", track: false, h: 10 }, { at: 0.2 });
-      s.note("l1", { text: "too vague", x: 400, y: 600, color: "red", font: "math" }, { at: 0.3 }); s.note("l2", { text: "over-specified", x: 1200, y: 600, color: "red", font: "math" }, { at: 0.3 });
-      s.dot("k", { x: 400, y: 540, r: 16, color: "gold", halo: true }, { at: 0.4 });
-      s.to("k", { x: 1200 }, { at: 0.6, dur: 0.9 }); s.to("k", { x: 800, color: "green" }, { at: 1.6, dur: 0.9 });
-      s.note("l3", { text: "right altitude", x: 800, y: 480, color: "green", font: "math", size: 28 }, { at: 2.3 });
-    }},
-    { say: "واجعل مجموعة الأدوات صغيرة وغير متداخلة.", do: s => {
-      s.clear({ dur: 0.4 });
-      for (let i = 0; i < 12; i++) s.box("tl" + i, { x: 440 + (i % 4) * 100 + (i % 3) * 14, y: 440 + Math.floor(i / 4) * 80, w: 120, h: 50, label: "tool", size: 20, color: "dim" }, { at: 0.2 + i * 0.03 });
-      ["search", "read", "write", "run"].forEach((t, i) => s.box("g" + i, { x: 1150, y: 380 + i * 90, w: 180, h: 60, label: t, size: 24, color: "orange" }, { at: 1.2 + i * 0.15 }));
-      s.mark("bx", "tl1", "x", { at: 0.9 });
-    }},
-    { say: "واستخدم أمثلة قليلة نموذجية، بدل قوائم قواعد طويلة.", do: s => {
-      s.clear({ dur: 0.4 });
-      s.doc("rules", { x: 480, y: 540, w: 220, h: 300, lines: 12, title: "40 rules", color: "dim" }, { at: 0.2 });
-      s.box("e1", { x: 1100, y: 470, w: 300, h: 70, label: "example 1", size: 26, color: "green" }, { at: 0.7 }); s.box("e2", { x: 1100, y: 600, w: 300, h: 70, label: "example 2", size: 26, color: "green" }, { at: 0.9 });
-    }},
-    { sec: "قِس", say: "ثم قِس: هل حذف قسم معيّن يغيّر الجودة؟", eq: "@Delta @T{quality}( @T{prompt} - @T{section} )", do: s => {
-      s.clear({ dur: 0.4 });
-      s.bars("ab", [["full prompt", 0.86, "teal", "86%"], ["− examples", 0.71, "red", "71%  keep it"], ["− rules list", 0.87, "green", "87%  drop it"]], { x: 640, y: 540, w: 560, gap: 100, size: 30, h: 34 }, { at: 0.3 });
-    }}
-  ]);
-
-  // ------------------------------------------------------------------ A2.2 Just-in-time context, compaction, notes
-  X.lesson("A2.2", [
-    { sec: "عند الحاجة", say: "في المهام الطويلة، لا يحمّل الوكيل كل شيء مسبقًا.", do: s => {
-      for (let i = 0; i < 20; i++) s.doc("f" + i, { x: 300 + (i % 10) * 100, y: 420 + Math.floor(i / 10) * 130, w: 64, h: 82, lines: 3, color: "dim" }, { at: 0.2 + i * 0.02 });
-      s.zone("ctx", { x: 1050, y: 760, w: 600, h: 120, label: "context", color: "teal" }, { at: 0.6 });
-    }},
-    { say: "بل يحتفظ بمراجع خفيفة، مثل مسارات الملفات، ويجلب المحتوى عند الحاجة.", do: s => {
-      s.box("ref", { x: 500, y: 760, w: 360, h: 90, label: "src/billing.py\nsrc/orders.py", font: "mono", size: 22, color: "gold" }, { at: 0.2 });
-      s.to("f13", { x: 1050, y: 760, stroke: "teal" }, { at: 0.8, dur: 0.9 });
-      s.pulse("f13", { at: 1.7 });
-    }},
-    { sec: "الضغط", say: "وعندما يمتلئ السياق، يلخّص المحادثة، ويبدأ من جديد بالملخص.", eq: "@T{context} @to @T{summary} @to @T{fresh context}", do: s => {
-      s.clear({ dur: 0.4 });
-      s.box("full", { x: 800, y: 460, w: 900, h: 90, label: "context 95% full", size: 28, color: "red", fill: "#2a1416" }, { at: 0.3 });
-      s.box("sm", { x: 800, y: 640, w: 260, h: 70, label: "summary", size: 28, color: "green" }, { at: 1 });
-      s.to("full", { w: 260, y: 640, opacity: 0 }, { at: 1, dur: 0.8 });
-      s.box("fresh", { x: 800, y: 640, w: 900, h: 90, label: "", color: "teal", fop: 0.2 }, { at: 1.8 });
-      s.to("sm", { x: 470, w: 220 }, { at: 1.8, dur: 0.6 });
-    }},
-    { sec: "الملاحظات", say: "ويكتب ملاحظات منظّمة خارج السياق، مثل قائمة مهام أو ملف تقدّم.", do: s => {
-      s.clear({ dur: 0.4 });
-      s.code("notes", { x: 800, y: 520, size: 26, title: "progress.md", lines: ["- [x] read billing module", "- [x] fix rounding bug", "- [ ] add regression test", "- [ ] update changelog"] }, { at: 0.3, dur: 1.6 });
-    }},
-    { say: "فتبقى هذه الملاحظات حتى بعد إعادة التشغيل.", do: s => {
-      s.icon("rs", { name: "refresh", x: 1250, y: 520, s: 80, color: "orange" }, { at: 0.2 });
-      s.to("rs", { rot: 360 }, { at: 0.4, dur: 1 });
-      s.pulse("notes", { at: 1.2, color: "green" });
-    }},
-    { sec: "الوكلاء الفرعيون", say: "ويمكن لوكيل فرعي أن يستكشف بعمق، ويعيد خلاصة قصيرة فقط.", do: s => {
-      s.clear({ dur: 0.4 });
-      s.box("main", { x: 420, y: 520, w: 240, h: 130, label: "main agent", icon: "bot", color: "purple", size: 26 }, { at: 0.2 });
-      s.box("sub", { x: 1100, y: 520, w: 240, h: 130, label: "subagent", icon: "search", color: "blue", size: 26 }, { at: 0.4 });
-      s.zone("deep", { x: 1100, y: 560, w: 520, h: 520, label: "explores 40 files", color: "blue" }, { at: 0.6 });
-      s.box("res", { x: 760, y: 700, label: "3-line finding", size: 24, color: "gold", h: 56 }, { at: 1.4 });
-      s.flow("sub", "main", { color: "gold", at: 1.2 });
-    }}
-  ]);
-
-  // ------------------------------------------------------------------ A2.3 Prompt caching & cost control
-  X.lesson("A2.3", [
-    { sec: "البداية المشتركة", say: "طلبات كثيرة تشترك في بداية طويلة: تعليمات النظام والمستندات.", do: s => {
-      for (let i = 0; i < 3; i++) { s.box("pf" + i, { x: 650, y: 400 + i * 120, w: 760, h: 80, label: "system + policy docs (20K tokens)", size: 24, color: "purple", fill: "#241a38" }, { at: 0.2 + i * 0.2 }); s.box("q" + i, { x: 1150, y: 400 + i * 120, w: 200, h: 80, label: "question " + (i + 1), size: 22, color: "teal" }, { at: 0.3 + i * 0.2 }); }
-    }},
-    { say: "والتخزين المؤقت يعيد استخدام هذه البداية، بدل معالجتها كل مرة.", do: s => {
-      s.to(["pf1", "pf2"], { stroke: "green", fill: "#11261a", label: "cached prefix ✓" }, { at: 0.4, dur: 0.6, st: 0.2 });
-      s.icon("bz", { name: "bolt", x: 220, y: 520, s: 70, color: "green" }, { at: 0.3 });
-    }},
-    { say: "فتنخفض التكلفة حتى تسعين بالمئة، ويقل زمن الرد الأول كثيرًا.", eq: "@T{cost}_{@T{cached}} @approx 0.1 @times @T{cost}_{@T{normal}}", do: s => {
-      s.clear({ dur: 0.4 });
-      s.bars("c", [["cost · no cache", 0.9, "red", "$0.060"], ["cost · cached", 0.1, "green", "$0.006"], ["first token · no cache", 0.7, "red", "3.1 s"], ["first token · cached", 0.2, "green", "0.9 s"]], { x: 720, y: 540, w: 520, gap: 80, size: 26, h: 30 }, { at: 0.3 });
-    }},
-    { sec: "الترتيب", say: "لذلك ضع المحتوى الثابت أولًا، والمتغير في النهاية.", do: s => {
-      s.clear({ dur: 0.4 });
-      s.box("g1", { x: 620, y: 440, w: 560, h: 76, label: "static: system + docs", size: 26, color: "green" }, { at: 0.3 }); s.box("g2", { x: 1060, y: 440, w: 260, h: 76, label: "user question", size: 24, color: "teal" }, { at: 0.4 });
-      s.mark("gc", "g1", "check", { at: 0.8 });
-      s.box("b1", { x: 460, y: 640, w: 260, h: 76, label: "timestamp", size: 24, color: "red" }, { at: 1 }); s.box("b2", { x: 900, y: 640, w: 560, h: 76, label: "static: system + docs", size: 26, color: "dim" }, { at: 1.1 });
-      s.note("bn", { text: "a changing first token breaks the cache", x: 800, y: 740, color: "red", font: "math", size: 26 }, { at: 1.5 });
-    }},
-    { sec: "المتابعة", say: "وتابع الـ Tokens المخزّنة وغير المخزّنة في سجلات الاستهلاك.", do: s => {
-      s.clear({ dur: 0.4 });
-      s.code("u", { x: 800, y: 520, size: 26, title: "usage", lines: ["input_tokens: 412", "cache_creation_input_tokens: 0", "cache_read_input_tokens: 20480", "output_tokens: 180"] }, { at: 0.3, dur: 1.4 });
-      s.to("u", { hl: 2 }, { at: 1.9, dur: 0.2 });
-    }},
-    { sec: "ضوابط أخرى", say: "واجمعه مع حدٍّ لـ max_tokens لكل ميزة، وتوجيه الطلبات البسيطة إلى نماذج أرخص.", do: s => {
-      s.clear({ dur: 0.4 });
-      s.col("ct", ["prompt caching", "max_tokens per feature", "route simple → cheaper model"], { x: 800, y: 540, size: 30, icons: ["bolt", "gauge", "route"], colors: ["green", "gold", "blue"], w: 600 }, { at: 0.3, st: 0.25 });
-    }}
-  ]);
-
-  // ------------------------------------------------------------------ A2.4 Official prompt engineering guide
-  X.lesson("A2.4", [
-    { sec: "ابدأ بالقياس", say: "دليل هندسة الأوامر يبدأ بمعايير النجاح والاختبارات، لا بالحيل.", do: s => {
-      s.chain("st", ["success criteria", "test cases", "baseline"], { y: 520, gap: 90, colors: ["gold", "blue", "dim"], w: 280, h: 90, size: 28 }, { st: 0.3 });
-    }},
-    { sec: "تقنية بعد تقنية", say: "ثم تطبّق التقنيات واحدة تلو الأخرى، وتقيس أثر كل منها.", do: s => {
-      s.clear({ dur: 0.4 });
-      const T = ["clear & direct", "examples", "XML tags", "room to think", "prompt chaining"];
-      T.forEach((t, i) => s.bar("t" + i, { x: 620, y: 360 + i * 95, w: 560, v: 0.5 + i * 0.08, color: "teal", label: t, size: 28, h: 32, val: Math.round((0.5 + i * 0.08) * 100) + "%" }, { at: 0.3 + i * 0.3 }));
-      s.to("t*", { opacity: 0.3 }, { at: 2.0, dur: 0.4 });
-    }},
-    { say: "كن واضحًا ومباشرًا، وأعطِ سياقًا عن الهدف.", do: s => { s.to("t0", { opacity: 1, color: "gold" }, { dur: 0.4 }); s.pulse("t0", { at: 0.4 }); } },
-    { say: "واستخدم أمثلة متعددة، ووسوم XML لتنظيم الأقسام.", do: s => { s.to(["t1", "t2"], { opacity: 1, color: "gold" }, { dur: 0.4, st: 0.3 }); } },
-    { say: "وامنح النموذج مساحة للتفكير في المهام المعقدة.", do: s => { s.to("t3", { opacity: 1, color: "gold" }, { dur: 0.4 }); } },
-    { say: "واربط أوامر متتالية للمهام متعددة الخطوات، بدل أمر عملاق واحد.", do: s => {
-      s.to("t4", { opacity: 1, color: "gold" }, { dur: 0.4 });
-      s.to("t*", { opacity: 0.2 }, { at: 1, dur: 0.4 });
-      s.box("giant", { x: 800, y: 470, w: 700, h: 90, label: "one giant prompt", size: 28, color: "red" }, { at: 1.2 });
-      s.chain("small", ["research", "outline", "draft", "review"], { y: 680, gap: 50, colors: ["blue", "blue", "blue", "green"], h: 70, size: 26 }, { at: 1.8, st: 0.15 });
-    }},
-    { say: "وبعد كل تقنية: قِس، ولا تفترض.", eq: "@T{technique} @to @T{measure} @to @T{keep or drop}", do: s => {
-      s.clear({ dur: 0.4 });
-      s.ring("lp", { x: 800, y: 540, r: 160, color: "teal", arrows: 3 }, { at: 0.3 });
-      ["try", "measure", "keep / drop"].forEach((t, i) => { const a = (-90 + i * 120) * Math.PI / 180; s.box("n" + i, { x: 800 + Math.cos(a) * 160, y: 540 + Math.sin(a) * 160, label: t, size: 26, h: 56, color: "teal", fill: "bg" }, { at: 0.5 + i * 0.2 }); });
-    }}
-  ]);
-
-  // ------------------------------------------------------------------ A2.5 Multimodal & voice
-  X.lesson("A2.5", [
-    { sec: "الرؤية", say: "النماذج الحديثة ترى المستندات مباشرة: فاتورة كصورة، أو ملف PDF.", do: s => {
-      s.doc("inv", { x: 420, y: 540, w: 260, h: 340, lines: 8, title: "invoice.png" });
-      s.box("vm", { x: 820, y: 540, w: 220, h: 150, label: "vision model", icon: "eye", color: "teal", size: 26 }, { at: 0.6 });
-      s.link("l1", "inv", "vm", { color: "dim" }, { at: 0.9 });
-    }},
-    { say: "ومع مخطط JSON صارم، تستخرج منها حقولًا مهيكلة.", do: s => {
-      s.code("js", { x: 1260, y: 540, size: 24, title: "extracted.json", lines: ["{", "  \"vendor\": \"Acme Ltd\",", "  \"date\": \"2026-06-30\",", "  \"total\": 1240.00", "}"] }, { at: 0.3, dur: 1.4 });
-      s.link("l2", "vm", "js", { color: "teal" }, { at: 0.2 });
-    }},
-    { say: "صغّر الصور واضغطها قبل الرفع، فالصور الضخمة تهدر الـ Tokens.", do: s => {
-      s.to("inv", { w: 160, h: 210 }, { at: 0.3, dur: 0.9 });
-      s.num("tk", { v: 6400, x: 420, y: 800, size: 34, color: "orange", suf: " tokens" }, { at: 0.2 });
-      s.to("tk", { v: 1600, color: "green" }, { at: 0.4, dur: 1 });
-    }},
-    { say: "وتحقّق برمجيًا من الأرقام والتواريخ المستخرجة.", eq: "@sum @T{line items} @overset{?}{=} @T{total}", do: s => {
-      s.to("js", { hl: 3 }, { dur: 0.2 });
-      s.box("chk", { x: 1260, y: 770, label: "sum(items) == total ✓", font: "mono", size: 22, color: "green", h: 54 }, { at: 0.5 });
-    }},
-    { sec: "الصوت", say: "وفي الصوت مساران. الأول: تحويل الكلام إلى نص، ثم نموذج، ثم نطق.", eq: "@T{STT} @to @T{LLM} @to @T{TTS}", do: s => {
-      s.clear({ dur: 0.4 });
-      s.chain("p", ["speech → text", "LLM", "text → speech"], { y: 430, gap: 90, icons: ["mic", "brain", "speaker"], colors: ["blue", "purple", "blue"], w: 230, h: 140, size: 24 }, { at: 0.3, st: 0.25 });
-    }},
-    { say: "مرن وسهل التحكم، لكنه أبطأ، كسباق تتابع.", do: s => {
-      [["STT", 0.25, "blue"], ["LLM", 0.4, "purple"], ["TTS", 0.25, "blue"]].reduce((x, [l, v, c], i) => { s.box("lat" + i, { x: x + v * 400, y: 640, w: v * 800 - 6, h: 40, r: 6, label: l, size: 20, color: c }, { at: 0.3 + i * 0.3, in: "grow" }); return x + v * 800; }, 400);
-      s.note("lt", { text: "≈ 1.5–3 s", x: 800, y: 700, font: "math", color: "orange", size: 28 }, { at: 1.3 });
-    }},
-    { say: "والثاني: نموذج صوتي فوري، يسمع ويتكلم مباشرة، بأقل زمن استجابة.", do: s => {
-      s.box("rt", { x: 800, y: 790, w: 420, h: 70, label: "realtime speech model", icon: "wave", inline: true, color: "green", size: 24 }, { at: 0.3 });
-      s.note("rtl", { text: "≈ 0.3–0.8 s", x: 1150, y: 790, font: "math", color: "green", size: 28 }, { at: 0.8 });
-    }}
-  ]);
-
-  // ------------------------------------------------------------------ A2.6 Fine-tuning, distillation & LoRA
-  X.lesson("A2.6", [
-    { sec: "متى؟", say: "عندما تصل هندسة الأوامر وRAG إلى سقفهما، يأتي دور الضبط الدقيق.", do: s => {
-      s.line("ax", { x1: 400, y1: 760, x2: 1240, y2: 760, color: "soft" }); s.line("ay", { x1: 400, y1: 760, x2: 400, y2: 320, color: "soft" });
-      s.path("cv", { d: "M400 720 C 560 520, 700 470, 900 460 L 1080 458", color: "teal", w: 5 }, { at: 0.3, dur: 1.2 });
-      s.path("ft", { d: "M1080 458 L 1240 360", color: "orange", w: 5, dash: "10 8" }, { at: 1.5, dur: 0.8 });
-      s.note("pl", { text: "prompting + RAG ceiling", x: 820, y: 420, font: "math", color: "teal" }, { at: 1 }); s.note("fl", { text: "fine-tuning", x: 1200, y: 320, font: "math", color: "orange" }, { at: 1.8 });
-    }},
-    { sec: "التقطير", say: "التقطير: نموذج قوي يولّد ويراجع بيانات تدريب لنموذج صغير وسريع.", eq: "@P{teacher} @to @T{data} @to @C{student}", do: s => {
-      s.clear({ dur: 0.4 });
-      s.box("tc", { x: 380, y: 520, w: 260, h: 180, label: "teacher", sub: "large model", icon: "brain", color: "purple", size: 30 }, { at: 0.3 });
-      s.doc("ds", { x: 800, y: 520, w: 150, h: 190, lines: 7, title: "train.jsonl", color: "gold" }, { at: 0.7 });
-      s.box("st", { x: 1220, y: 520, w: 200, h: 140, label: "student", sub: "small model", icon: "bolt", color: "teal", size: 28 }, { at: 1.1 });
-      s.flow("tc", "ds", { color: "purple", n: 3, gap: 0.15, at: 0.9 }); s.flow("ds", "st", { color: "gold", n: 3, gap: 0.15, at: 1.5 });
-    }},
-    { say: "فيتعلّم الصغير أن يحاكي الكبير في مهمة محددة، بتكلفة أقل بكثير.", do: s => {
-      s.bars("cmp", [["teacher cost", 0.9, "purple", "$$$"], ["student cost", 0.12, "teal", "$"]], { x: 640, y: 770, w: 420, gap: 50, size: 24, h: 24 }, { at: 0.3 });
-    }},
-    { sec: "LoRA", say: "وLoRA لا يعدّل كل الأوزان، بل يدرّب مصفوفتين صغيرتين بجانبها.", eq: "W' = @M{W} + @O{B} @, @O{A}", do: s => {
-      s.clear({ dur: 0.4 });
-      s.box("W", { x: 560, y: 540, w: 360, h: 360, label: "W  (frozen)", size: 34, color: "dim", fill: "panel" }, { at: 0.3 });
-      s.text("pl", { text: "+", x: 830, y: 540, size: 60, color: "soft" }, { at: 0.7 });
-      s.box("B", { x: 960, y: 540, w: 50, h: 360, label: "B", size: 30, color: "orange" }, { at: 0.9 });
-      s.box("A", { x: 1170, y: 400, w: 360, h: 50, label: "A", size: 30, color: "orange" }, { at: 1.1 });
-      s.icon("lk", { name: "lock", x: 560, y: 760, s: 46, color: "dim" }, { at: 0.6 });
-    }},
-    { say: "أقل من واحد بالمئة من الأوزان، فتنخفض تكلفة الـ GPU بشدة.", do: s => {
-      s.num("pc", { v: 100, x: 1170, y: 640, size: 46, color: "orange", dec: 1, suf: "% trainable" }, { at: 0.2 });
-      s.to("pc", { v: 0.5 }, { at: 0.4, dur: 1.4 });
-    }},
-    { sec: "البيانات", say: "وجودة البيانات أهم بكثير من حجمها.", do: s => {
-      s.clear({ dur: 0.4 });
-      s.bars("dq", [["500 clean, reviewed examples", 0.88, "green", "88%"], ["50,000 noisy examples", 0.7, "red", "70%"]], { x: 760, y: 540, w: 480, gap: 110, size: 28, h: 34 }, { at: 0.3 });
-    }},
-    { say: "وقارن النموذج المضبوط دائمًا مع أساس هندسة الأوامر، على مجموعة تقييم محجوزة.", eq: "@T{fine-tuned} @; @T{vs} @; @T{prompt baseline} @; @T{on held-out evals}", do: s => {
-      s.clear({ dur: 0.4 });
-      s.bars("cmp2", [["prompt baseline", 0.84, "teal", "84%"], ["fine-tuned small", 0.9, "orange", "90% · 6× cheaper"]], { x: 700, y: 540, w: 520, gap: 110, size: 28, h: 34 }, { at: 0.3 });
-    }}
-  ]);
+  /* __PART2__ */
 })();
