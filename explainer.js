@@ -649,7 +649,7 @@
       o.bg = mk("rect", { rx: 14, fill: "#0d1319", stroke: "#2a3441", "stroke-width": 2 }, g);
       o.hlr = mk("rect", { rx: 4 }, g);
       o.hlb = mk("rect", { rx: 2 }, g);
-      o.cur = mk("rect", { width: Math.max(2, size * 0.12), height: size * 1.15, rx: 1, fill: C.gold }, g);
+      o.caret = mk("rect", { width: Math.max(2, size * 0.12), height: size * 1.15, rx: 1, fill: C.gold }, g);
       o.dots = [C.red, C.gold, C.green].map(c => mk("circle", { r: size * 0.26, fill: c, opacity: 0.85 }, g));
       o.tt = mk("text", { "font-family": FF.mono, "font-size": size * 0.72, fill: C.dim, "dominant-baseline": "central" }, g);
       o.tx = (p.lines || []).map(() => mk("text", { "font-family": FF.mono, "font-size": size, "dominant-baseline": "central", style: "white-space:pre" }, g));
@@ -683,11 +683,11 @@
         for (const [s, c] of o.tok[i]) { if (n <= 0) break; const part = s.slice(0, n); n -= part.length; const ts = mk("tspan", { fill: c }, t); ts.textContent = part; }
       });
       if (P.reveal > 0.01 && P.reveal < 0.995) {
-        sa(o.cur, "display", "inline");
-        sa(o.cur, "x", r2(x0 + pad + curCol * size * 0.6 + 2));
-        sa(o.cur, "y", r2(y0 + size * 2.15 + curLine * lh - size * 0.58));
-        sa(o.cur, "opacity", Math.sin((tm || 0) * 10) > -0.2 ? 0.95 : 0.2);
-      } else sa(o.cur, "display", "none");
+        sa(o.caret, "display", "inline");
+        sa(o.caret, "x", r2(x0 + pad + curCol * size * 0.6 + 2));
+        sa(o.caret, "y", r2(y0 + size * 2.15 + curLine * lh - size * 0.58));
+        sa(o.caret, "opacity", Math.sin((tm || 0) * 10) > -0.2 ? 0.95 : 0.2);
+      } else sa(o.caret, "display", "none");
     }
   };
 
