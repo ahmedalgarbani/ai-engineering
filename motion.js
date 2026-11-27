@@ -197,7 +197,7 @@
   }
 
   // CODE WALKTHROUGH ACT
-  function langOf(ex) { return /SELECT|CREATE|WITH /.test(ex) ? "query.sql" : /const |=>|z\.object/.test(ex) ? "example.ts" : /\{\{|<policy>/.test(ex) ? "prompt.xml" : /vllm|run:/.test(ex) ? "deploy.sh" : "example.py"; }
+  function langOf(ex) { return /SELECT|CREATE|WITH /.test(ex) ? "query.sql" : /const |=>|z\.object/.test(ex) ? "example.ts" : /\{\{|<policy>/.test(ex) ? "prompt.xml" : /services:\n|helm|values\.yaml/.test(ex) ? "docker-compose.yml" : /^\s*\{[\s\S]*"\w+":/.test(ex) ? "config.json" : /docker run|vllm|git worktree|run:/.test(ex) ? "deploy.sh" : "example.py"; }
   function code(l) {
     const acc = l.acc, lines = l.ex.split("\n");
     const fs = lines.length > 9 ? 15 : 17, lh = fs * 1.65;

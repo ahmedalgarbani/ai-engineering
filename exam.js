@@ -1,4 +1,4 @@
-// Comprehensive Bilingual End-of-Course Level Assessment Exam (36 weighted questions across all 6 stages)
+// Comprehensive Bilingual End-of-Course Level Assessment Exam (6 weighted questions per stage; stages may append to EXAM_BANK)
 (function () {
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
@@ -45,7 +45,7 @@
     }
   ];
 
-  // 36 curated bilingual questions (6 per stage: C, S1, S2, S3, S4, S5), diff 1=1pt, 2=2pt, 3=3pt
+  // 54 curated bilingual questions (6 per stage: C, S1, S2, S3, S4, S5, S6, S7, S8), diff 1=1pt, 2=2pt, 3=3pt
   window.EXAM_BANK = [
     // ===== CORE CONCEPTS (C) =====
     { id: "Q01", stage: "C", lesson: "C1.1", diff: 1,
@@ -641,7 +641,11 @@
     const AR = ui === "ar";
     const T = p => AR ? p[1] : p[0];
     const STAGE_NAMES = Object.fromEntries(stages.map(s => [s.id, s.t]));
-    const STAGE_ACC = { C: "#f5a524", S1: "#3db4f2", S2: "#22c3a6", S3: "#f2795b", S4: "#e8618c", S5: "#9ccc65", S6: "#a855f7", S7: "#06b6d4" };
+    const STAGE_ACC = { C: "#f5a524", S1: "#3db4f2", S2: "#22c3a6", S3: "#f2795b", S4: "#e8618c", S5: "#9ccc65", S6: "#a855f7", S7: "#06b6d4", S8: "#6366f1" };
+    // Counts derive from the bank, so adding a stage (or questions) never leaves stale numbers.
+    const EXAM_STAGES = stages.map(s => s.id).filter(id => window.EXAM_BANK.some(q => q.stage === id));
+    const NQ = window.EXAM_BANK.length, NST = EXAM_STAGES.length, NQUICK = NST * 3;
+    const FULL_MIN = Math.ceil(NQ * 50 / 60), QUICK_MIN = Math.ceil(NQUICK * 50 / 60);
 
     let state = {
       phase: "start", // start | running | results
@@ -672,9 +676,9 @@
         return pool;
       }
       if (mode === "quick") {
-        // 3 balanced questions (diff 1, 2, 3) from each of the 8 stages = 24 questions
+        // 3 balanced questions (diff 1, 2, 3) from each stage that has questions
         const out = [];
-        ["C", "S1", "S2", "S3", "S4", "S5", "S6", "S7"].forEach(st => {
+        EXAM_STAGES.forEach(st => {
           const sq = pool.filter(q => q.stage === st);
           const d1 = sq.filter(q => q.diff === 1)[0];
           const d2 = sq.filter(q => q.diff === 2)[0];
@@ -683,7 +687,7 @@
         });
         return out;
       }
-      // Full: all 48 questions (6 per stage)
+      // Full: every question in the bank (6 per stage)
       return pool;
     }
 
@@ -695,7 +699,7 @@
       state.ix = 0;
       state.answers = {};
       state.flags = new Set();
-      state.durSec = mode === "full" ? 40 * 60 : mode === "quick" ? 20 * 60 : 8 * 60;
+      state.durSec = mode === "full" ? FULL_MIN * 60 : mode === "quick" ? QUICK_MIN * 60 : 8 * 60;
       state.remSec = state.durSec;
       state.startTs = Date.now();
       state.phase = "running";
@@ -770,8 +774,8 @@
               <div class="eyebrow" style="--sc:var(--accent)">${AR ? "اختبار تحديد المستوى الشامل · شهادة إتقان" : "COMPREHENSIVE LEVEL ASSESSMENT · CERTIFICATION"}</div>
               <h2>${AR ? "اختبار نهاية الدورة وتحديد المستوى" : "End-of-Course AI Engineer Level Exam"}</h2>
               <p>${AR
-                ? "اختبر جاهزيتك الحقيقية كمهندس ذكاء اصطناعي عبر 48 سؤالًا تطبيقيًا ومعماريًا موزّنة الصعوبة تغطي كل مراحل الكورس الثماني (بما فيها البرمجة مع AI وهندسة الـ Harness وPortainer وبروتوكولات A2A/AG-UI)، واحصل على تشخيص دقيق لمستواك وخطة مراجعة مخصّصة وشهادة إنجاز."
-                : "Test your real-world AI Engineering readiness with 48 difficulty-weighted scenario and architecture questions across all 8 stages (including Coding with AI, Harness Engineering, Portainer/Containers & A2A/AG-UI). Receive your exact AI Engineer level, stage-by-stage breakdown, study plan, and certificate."}</p>
+                ? `اختبر جاهزيتك الحقيقية كمهندس ذكاء اصطناعي عبر ${NQ} سؤالًا تطبيقيًا ومعماريًا موزّنة الصعوبة تغطي كل مراحل الكورس الـ ${NST} (بما فيها البرمجة مع AI وهندسة الـ Harness وPortainer وبروتوكولات A2A/AG-UI والمسار الشامل للذكاء الوكيلي)، واحصل على تشخيص دقيق لمستواك وخطة مراجعة مخصّصة وشهادة إنجاز.`
+                : `Test your real-world AI Engineering readiness with ${NQ} difficulty-weighted scenario and architecture questions across all ${NST} stages (including Coding with AI, Harness Engineering, Portainer/Containers, A2A/AG-UI and the complete Agentic AI track). Receive your exact AI Engineer level, stage-by-stage breakdown, study plan, and certificate.`}</p>
               <div class="exam-levels-strip">
                 ${window.EXAM_LEVELS.map(lv => `
                   <div class="elv-pill" style="--lc:${lv.color}">
@@ -802,13 +806,13 @@
             <div class="emode featured">
               <div class="em-tag">${AR ? "موصى به لتحديد المستوى" : "RECOMMENDED FOR CERTIFICATION"}</div>
               <h3>🏆 ${AR ? "الاختبار الشامل لتحديد المستوى" : "Full Certification Level Exam"}</h3>
-              <p>${AR ? "48 سؤالًا موزّنة الصعوبة (6 أسئلة لكل مرحلة) · 40 دقيقة · شهادة مستوى وتقرير تشخيصي كامل." : "48 difficulty-weighted questions (6 per stage) · 40 min · Full diagnostic report & printable certificate."}</p>
+              <p>${AR ? `${NQ} سؤالًا موزّنة الصعوبة (6 أسئلة لكل مرحلة) · ${FULL_MIN} دقيقة · شهادة مستوى وتقرير تشخيصي كامل.` : `${NQ} difficulty-weighted questions (6 per stage) · ${FULL_MIN} min · Full diagnostic report & printable certificate.`}</p>
               <button class="btn pri" id="startFull">${AR ? "ابدأ الاختبار الشامل الآن ←" : "Start Full Exam →"}</button>
             </div>
             <div class="emode">
               <div class="em-tag">${AR ? "سريع ومتوازن" : "FAST & BALANCED"}</div>
               <h3>⚡ ${AR ? "اختبار تحديد المستوى السريع" : "Quick Placement Check"}</h3>
-              <p>${AR ? "24 سؤالًا متوازنًا (سهل/متوسط/متقدم من كل مرحلة) · 20 دقيقة · تقييم سريع ودقيق." : "24 balanced questions (Beginner/Mid/Senior per stage) · 20 min · Fast accurate placement."}</p>
+              <p>${AR ? `${NQUICK} سؤالًا متوازنًا (سهل/متوسط/متقدم من كل مرحلة) · ${QUICK_MIN} دقيقة · تقييم سريع ودقيق.` : `${NQUICK} balanced questions (Beginner/Mid/Senior per stage) · ${QUICK_MIN} min · Fast accurate placement.`}</p>
               <button class="btn" id="startQuick">${AR ? "ابدأ الاختبار السريع" : "Start Quick Check"}</button>
             </div>
             <div class="emode">

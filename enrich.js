@@ -346,7 +346,7 @@
     const bestPractice = l.tip
       ? l.tip
       : [l.p[0][0], l.p[0][1]];
-    const mistake = m.mistake;
+    const mistake = l.mistake || m.mistake;
     const hook = [
       `How do real AI Engineers master "${shortTitle(l.t[0])}" in production?`,
       `كيف يتقن مهندسو الذكاء الاصطناعي «${shortTitle(l.t[1])}» في بيئة الإنتاج؟`
@@ -355,7 +355,7 @@
     // Build a meaningful, accurate quick Brain-Check question from the lesson itself
     const correctEn = l.p[0][0];
     const correctAr = l.p[0][1];
-    const d1 = m.mistake;
+    const d1 = mistake;
     const d2 = [
       "Skip evaluation, validation and budgets because modern LLMs always self-correct automatically.",
       "تجاوز التقييم والتحقق والميزانيات لأن النماذج الحديثة تصحّح نفسها تلقائيًا دائمًا."

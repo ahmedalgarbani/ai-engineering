@@ -274,6 +274,58 @@
         "MCP = Agent ↔ Tools; A2A = Agent ↔ Agent; AG-UI = Agent ↔ User Interface.",
         "MCP لربط الوكيل بالأدوات، وA2A لربط الوكيل بوكيل آخر، وAG-UI لربط الوكيل بواجهة المستخدم."
       ]
+    },
+    {
+      rx: /\b(codeact|plan-and-execute|reflexion|tree-of-thoughts|best-of-n|re-plan|replanner)\b/i,
+      en: "Cognitive Architectures: Plan-and-Execute, Reflexion, CodeAct & ToT",
+      ar: "معماريات التفكير الوكيلي: Plan-and-Execute وReflexion وCodeAct وToT",
+      def: [
+        "Plan-and-Execute separates high-level planning (strong model) from fast parallel step execution and dynamic re-planning. Reflexion stores concise verbal lessons from objective failures to improve the next attempt. CodeAct replaces rigid 1-per-turn JSON tool calls with sandboxed Python scripts that compose loops, filters, and multiple tools in one turn. Best-of-N and Tree-of-Thoughts explore multiple branches and pick the verifier's top-scoring path.",
+        "يفصل Plan-and-Execute التخطيط الاستراتيجي (نموذج قوي) عن التنفيذ السريع والمتوازي مع إعادة تخطيط ديناميكية. ويحفظ Reflexion دروسًا لفظية من أخطاء موضوعية لتحسين المحاولة التالية. أما CodeAct فيستبدل استدعاءات JSON الجامدة بكتابة وتنفيذ كود Python معزول يركّب الحلقات والأدوات في جولة واحدة، بينما تستكشف Best-of-N وToT عدة مسارات وتختار الأعلى لدى المدقّق."
+      ],
+      ex: [
+        "CodeAct filters 50,000 API rows in sandbox RAM and prints 5 summary lines — saving 99% of context tokens.",
+        "يصفي CodeAct 50,000 سجل داخل الـ Sandbox ويطبع 5 أسطر ملخصة فقط — فيوفّر 99% من سياق النموذج."
+      ]
+    },
+    {
+      rx: /\b(working memory|episodic|semantic memory|procedural memory|coala|mem0|consolidation)\b/i,
+      en: "The 4 Types of Agentic Memory (CoALA Framework)",
+      ar: "أنواع الذاكرة الوكيلية الأربعة (إطار CoALA)",
+      def: [
+        "Working Memory is the live context window & scratchpad; Episodic Memory stores past experiences and failure/success trajectories; Semantic Memory holds structured facts about users and domains (updated via ADD/UPDATE/DELETE conflict resolution); Procedural Memory captures reusable rules, skills, and playbooks refined over time.",
+        "الذاكرة العاملة هي نافذة السياق الحالية؛ والعرضية (Episodic) تحفظ تجارب وأخطاء الماضي؛ والدلالية (Semantic) تحفظ حقائق منظّمة عن المستخدمين والمشاريع مع حل التعارضات؛ والإجرائية (Procedural) تحفظ القواعد والمهارات القابلة لإعادة الاستخدام."
+      ],
+      ex: [
+        "Extract & consolidate Semantic/Episodic memories asynchronously AFTER replying so chat latency stays zero.",
+        "استخلص وادمج الذاكرة الدلالية والعرضية في الخلفية بعد الرد حتى لا تزيد زمن انتظار المستخدم."
+      ]
+    },
+    {
+      rx: /\b(topology|supervisor|swarm|handoff|handoffs|blackboard|ping-pong|aci|computer use|accessibility tree)\b/i,
+      en: "Multi-Agent Topologies, Handoffs, ACI & Computer Use",
+      ar: "طوبولوجيات تعدد الوكلاء والتسليم (Handoffs) وواجهة ACI واستخدام الحاسوب",
+      def: [
+        "Multi-agent systems organize via Supervisor, Hierarchical, Swarm/Handoffs, or Blackboard/Event-Driven patterns — relying on typed Handoff Contracts and Context Isolation to avoid the 'telephone game'. ACI (Agent-Computer Interface) designs tool schemas and self-healing errors specifically for LLMs, while Computer Use bridges legacy UIs via Accessibility Trees/DOM and screenshots inside ephemeral sandboxes.",
+        "تُنظَّم الأنظمة متعددة الوكلاء عبر المشرف أو الهرمي أو السرب/التسليم أو السبورة، وتعتمد على عقود تسليم مهيكلة وعزل السياق. أما ACI فهي تصميم الأدوات ورسائل الخطأ لتناسب تفكير النماذج، بينما يتيح Computer Use التحكم في الواجهات عبر شجرة DOM ولقطات الشاشة داخل بيئة معزولة."
+      ],
+      ex: [
+        "Priority order: API/MCP first → Browser DOM/Accessibility Tree second → OS Pixel clicking last.",
+        "ترتيب الأولوية: API/MCP أولًا ← تحكم DOM/Accessibility ثانيًا ← النقر بالبكسل كخيار أخير."
+      ]
+    },
+    {
+      rx: /\b(pass\^k|pass@k|trajectory|goal drift|failure modes|tau-bench|τ-bench)\b/i,
+      en: "Trajectory Evals, pass@k vs. pass^k & Goal Drift",
+      ar: "تقييم المسار (Trajectory) ومقياس pass@k مقابل pass^k وانحراف الهدف",
+      def: [
+        "Trajectory Evaluation grades both the agent's final environment state AND the sequence of tools/steps it took. pass@k measures whether an agent succeeded at least once in k attempts (optimistic), while pass^k (from τ-bench) measures whether it succeeded on ALL k independent trials — exposing hidden inconsistency before production.",
+        "تقييم المسار يفحص الحالة النهائية الفعلية للبيئة بالإضافة لسلسلة الأدوات والخطوات. ويقيس pass@k النجاح مرة واحدة على الأقل من k محاولات، بينما يقيس pass^k النجاح في كل المحاولات الـ k بلا استثناء — وهو المقياس الحقيقي للثبات الإنتاجي."
+      ],
+      ex: [
+        "At 80% per-run accuracy, pass@5 is 99.97% (looks great), but pass^5 is only 32.8% (unreliable in production!).",
+        "عند دقة 80% للمحاولة، يبلغ pass@5 نسبة 99.97% (مخادع)، بينما pass^5 لا يتجاوز 32.8% فقط!"
+      ]
     }
   ];
 

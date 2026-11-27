@@ -1,7 +1,7 @@
 // Deterministic timeline driver: Renderer.prepare(plan) builds all chapter scenes,
 // Renderer.seek(t) poses every layer for time t (seconds) — no wall-clock animation.
 (function () {
-  const ACC = { C: "#f5a524", S1: "#3db4f2", S2: "#22c3a6", S3: "#f2795b", S4: "#e8618c", S5: "#9ccc65" };
+  const ACC = { C: "#f5a524", S1: "#3db4f2", S2: "#22c3a6", S3: "#f2795b", S4: "#e8618c", S5: "#9ccc65", S6: "#a855f7", S7: "#06b6d4", S8: "#6366f1" };
   const byId = {};
   COURSE.stages.forEach(st => st.modules.forEach(m => m.lessons.forEach(l => { l.stage = st; l.module = m; l.acc = ACC[st.id]; byId[l.id] = l; })));
   const $ = s => document.querySelector(s);
